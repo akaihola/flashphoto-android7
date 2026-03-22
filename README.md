@@ -10,6 +10,16 @@ triggered by broadcast intent from Termux. Built to work autonomously on an
 Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography –
 **no USB cable, no screen wake, no human interaction required**.
 
+**All research, experimentation, scripting, Java/APK development, on-device
+testing, and documentation in this project was performed autonomously by a
+coding agent (Claude Opus 4, running in [Pi][pi-agent]).** The human provided
+the goal ("take a flash photo from SSH on this old phone"), answered
+clarifying questions, physically connected/disconnected the USB cable and
+started SSH when asked, and reviewed results. Every line of code, every failed
+experiment, every workaround discovery, and this README were produced by the
+agent across four sessions totalling 607 API turns and ~68M tokens ($51 at API
+pricing). See [Agent session cost](#agent-session-cost) for the full breakdown.
+
 [claude-code]: https://claude.ai/code
 [pi-agent]: https://github.com/mariozechner/pi
 
@@ -17,10 +27,17 @@ Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography �
 
 ## The problem
 
-An old Honor 5C phone (NEM-L21) is repurposed as a timelapse camera in a dark
-indoor storage/utility space. The phone sits on mains power, connected to Wi-Fi,
+An old Honor 5C phone (NEM-L21) is repurposed as a timelapse camera pointed at
+the house mechanical room. The phone sits on mains power, connected to Wi-Fi,
 running [Termux][termux] with SSH access. A cron job takes a photo every three
-hours to monitor the state of the space over time.
+hours.
+
+The immediate goal is to capture flash-illuminated images of the utility gauges
+in this otherwise dark space – cold water meter, hot water meter, district
+heating meter, and hydronic radiator heating pressure/temperature gauges. The
+longer-term vision is to develop machine reading of these analog gauge faces to
+automatically track water consumption, heating energy use, and system pressure
+over time.
 
 The catch: the room is dark. Without flash, photos are black (0.01% mean
 brightness). Getting the flash to fire from a headless SSH session turned out to
@@ -335,14 +352,54 @@ The APK contains a single exported `BroadcastReceiver` (`FlashReceiver`) that:
 
 ## Future work
 
+### Immediate
+
 - [ ] Test full reboot cycle without USB (verify boot script + broadcast method)
 - [ ] Optimize torch warm-up time (currently 2s – could be shorter)
 - [ ] Add retry logic for transient camera errors
 - [ ] Explore manual exposure/ISO control for more consistent brightness
 - [ ] Set up photo retrieval pipeline (SCP/rsync from phone to server)
-- [ ] Verify FlashPhoto APK survives Android app lifecycle (battery optimization,
-  background restrictions)
-- [ ] Consider `CONTROL_AE_MODE_OFF` with manual exposure for maximum brightness
+
+### Gauge reading (next phase)
+
+The phone will be pointed at the house mechanical room gauges:
+
+- **Cold water meter** – cumulative m³ consumption
+- **Hot water meter** – cumulative m³ consumption
+- **District heating energy meter** – cumulative MWh from the district heating
+  network (*kaukolämpö*)
+- **Hydronic heating gauges** – pressure (bar) and temperature (°C) of the
+  radiator circuit (*vesikiertoinen patterilämmitys*)
+
+Planned work:
+
+- [ ] Mount phone in a fixed position with gauges in frame
+- [ ] Develop image segmentation to locate each gauge dial in the photo
+- [ ] Train or use OCR/CV model to read analog gauge needle positions
+- [ ] Log gauge readings over time (database or CSV)
+- [ ] Alert on anomalies (sudden consumption, pressure drop, temperature spike)
+- [ ] Dashboard for historical trends
+
+---
+
+## Agent session cost
+
+All work was performed by Claude Opus 4 across four Pi sessions on March 21–22,
+2026. Token counts and costs are from the Anthropic API usage logs embedded in
+each session file.
+
+| Session | Focus | Turns | Output tokens | Cache (read+write) | Cost |
+|---------|-------|------:|-------------:|-----------:|-----:|
+| `9c4eed4e` | Exploration, 6 failed approaches, first ADB flash | 213 | 79,753 | 25.1M + 799K | $19.54 |
+| `7138154e` | Brief intermediate | 6 | 1,087 | 120K + 39K | $0.33 |
+| `12acdef4` | Self-loopback ADB, production script | 210 | 60,025 | 20.0M + 254K | $13.11 |
+| `d98b9bef` | FlashPhoto APK, TORCH discovery, cron setup | 178 | 95,561 | 20.6M + 812K | $17.74 |
+| **Total** | | **607** | **236,426** | **65.8M + 1.9M** | **$50.73** |
+
+The high cache-read volume reflects the iterative nature of the work: each API
+turn re-sends the full conversation context (including tool results from SSH
+commands, logcat output, Java source, and build logs) which is served from
+Anthropic's prompt cache.
 
 ---
 
