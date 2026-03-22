@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Photo shoot with improved flash support for Termux/Android."""
+"""Photo shoot with improved flash support for Termux/Android.
+
+SUPERSEDED by flash-photo-broadcast.sh
+
+FAILURE MODE: Same fundamental issue as photo_shoot.py and flash-photo.sh.
+Adding a wake lock and a longer 2s flash delay doesn't help because Camera2
+kills the torch synchronously at session open, regardless of timing. The wake
+lock keeps the CPU alive but doesn't affect the camera hardware exclusion.
+Photos are black (0.01% brightness).
+"""
 
 import subprocess
 import sys

@@ -1,3 +1,22 @@
+// FAILED APPROACH: Run Camera2 flash photo via app_process on the device.
+//
+// FAILURE MODES:
+// 1. ActivityThread.systemMain() creates a "system" process. Android's process
+//    manager immediately kills it (SIGKILL) because Termux's UID (u0_a133) is
+//    not authorized to run as a system process.
+// 2. ActivityThread.attach(false) to register as a regular application also
+//    fails – the ActivityManagerService doesn't recognize the process, and
+//    Android kills it with SIGKILL or throws IllegalAccessException.
+// 3. Even if the process survived, Camera2 API needs a proper application
+//    Context (for CameraManager), which app_process can't provide for an
+//    unregistered process.
+// 4. Note: Termux's "am" command also uses app_process, but it only makes
+//    simple Binder IPC calls to ActivityManagerService – it never creates an
+//    ActivityThread or requests a Context. That's why am works but this doesn't.
+//
+// The working solution is the FlashPhoto APK (src/com/flashphoto/FlashReceiver.java)
+// which runs as a proper installed Android app with its own UID and permissions.
+
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;

@@ -1,4 +1,16 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# SUPERSEDED by flash-photo-broadcast.sh
+#
+# FAILURE MODES:
+# 1. termux-camera-photo uses Camera2 API which kills the torch LED when
+#    opening a camera session – they share the same hardware and the session
+#    takes exclusive control. Result: 0.01–0.4% brightness (essentially black).
+# 2. Bringing Termux to foreground ("am start -n com.termux/...") helps the
+#    torch stay on slightly longer on EMUI, but Camera2 still kills it before
+#    the shutter fires.
+# 3. The root cause is in Termux:API's CameraPhotoAPI.java which hardcodes
+#    CONTROL_AE_MODE_ON (mode 1), never using CONTROL_AE_MODE_ON_ALWAYS_FLASH.
+#
 # Take a photo with flash
 # Usage: flash-photo.sh [output_path]
 # Note: On EMUI/Android 7, torch only works when Termux is in foreground

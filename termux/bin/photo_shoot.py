@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Photo shoot with flash support for Termux/Android."""
+"""Photo shoot with flash support for Termux/Android.
+
+SUPERSEDED by flash-photo-broadcast.sh
+
+FAILURE MODE: Same as flash-photo.sh – Camera2 API (via termux-camera-photo)
+kills the torch LED when opening a camera session. The 0.5s delay between
+torch-on and capture is irrelevant because the kill happens at session open,
+not at a timing boundary. Photos are black (0.01% brightness).
+"""
 
 import subprocess
 import sys

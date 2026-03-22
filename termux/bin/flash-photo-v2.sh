@@ -1,4 +1,17 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# SUPERSEDED by flash-photo-adb-local.sh, then by flash-photo-broadcast.sh
+#
+# DRAWBACKS:
+# 1. Requires ADB connection (USB cable or TCP ADB), which means adbd must be
+#    running. On this EMUI device, adbd dies when USB is disconnected.
+# 2. The "adb shell" fallback in this script doesn't work from Termux because
+#    it tries to use the system adb client, not Termux's own adb package.
+# 3. The "/system/bin/input" fallback also fails – app_process is SIGKILL'd
+#    when run under Termux's UID (u0_a133), as INJECT_EVENTS permission is
+#    restricted to shell (UID 2000) and system apps.
+# 4. Replaced first by flash-photo-adb-local.sh (self-loopback ADB, still needs
+#    USB), then by flash-photo-broadcast.sh (FlashPhoto APK, no USB needed).
+#
 # flash-photo-v2.sh - Take a photo with flash on Honor NEM-L21
 #
 # Uses Huawei camera app with flash set to "On" (Päälle).

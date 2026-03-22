@@ -1,4 +1,17 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# SUPERSEDED by flash-photo-broadcast.sh
+#
+# DRAWBACKS:
+# 1. Requires USB cable to be physically connected at all times. On this EMUI
+#    device, adbd unconditionally stops when USB is disconnected, even with TCP
+#    mode active and a TCP client connected. This is EMUI-specific – stock
+#    Android keeps adbd alive in TCP mode.
+# 2. Requires "adb tcpip 5555" after every reboot (from a computer with USB).
+# 3. Screen must be awake for "input swipe" to register – adds complexity
+#    (wake check, unlock swipe) and risk (screen-off kills Wi-Fi on EMUI).
+# 4. Produces excellent results (27–44% brightness) but the USB requirement
+#    makes it unsuitable for fully autonomous deployment.
+#
 # flash-photo-adb-local.sh - Take a flash photo via self-loopback ADB
 #
 # Uses Huawei camera app with flash set to "On" (Päälle).

@@ -1,4 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# NOT NEEDED for flash-photo-broadcast.sh (FlashPhoto APK handles flash itself).
+# Only needed for the legacy ADB-based methods (flash-photo-adb-local.sh,
+# flash-photo-v2.sh) which rely on the Huawei camera app's flash setting.
+#
+# LIMITATION: Requires ADB shell context (the "input" command needs shell UID).
+# Cannot be run from Termux directly – must be run via ADB.
+#
 # set-flash-on.sh - Set Huawei camera flash mode to "On" (Päälle)
 # Run this ONCE via ADB shell, not from Termux (needs 'input' command)
 # The setting persists across camera restarts.
