@@ -64,6 +64,32 @@ The preview-frame save strategy is reliable on both battery and AC power.
 The old `STILL_CAPTURE` approach was the root cause of intermittent dark
 photos, not the power source.
 
+## Production room: auto-exposure failure and manual exposure fix
+
+In the dark utility room, all auto-exposure tests gave 0.8–1.6% brightness
+despite the torch being confirmed ON (visible LED). The torch illuminates
+objects 1–2m away, but AE sees a mostly dark scene and sets exposure too low.
+
+### Manual exposure sweep in production room
+
+| ISO | Exposure | Brightness | Notes |
+| --- | -------- | ---------- | ----- |
+| auto | auto | 0.8% | AE underexposes |
+| 200 | 33ms | 7.5% | |
+| 400 | 33ms | 10.6% | |
+| 800 | 16ms | 10.2% | |
+| 800 | 33ms | 16.9% | |
+| 800 | 50ms | 18.4% | |
+| 800 | 66ms | 19.2% | |
+| **800** | **100ms** | **23.9%** | **← production default** |
+| 1200 | 33ms | 18.8% | |
+| 1600 | 33ms | 19.2% | diminishing returns |
+
+### Production default: ISO 800 + 100ms
+
+Gives 24% brightness – gauges, labels, pipes all clearly readable.
+Longer exposure (200ms+) risks motion blur; higher ISO adds noise.
+
 ## TODO
 
 - [ ] Verify wakelock impact with controlled on/off comparison
