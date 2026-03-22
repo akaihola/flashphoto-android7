@@ -12,13 +12,17 @@ Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography �
 
 **All research, experimentation, scripting, Java/APK development, on-device
 testing, and documentation in this project was performed autonomously by a
-coding agent (Claude Opus 4, running in [Pi][pi-agent]).** The human provided
-the goal ("take a flash photo from SSH on this old phone"), answered
-clarifying questions, physically connected/disconnected the USB cable and
-started SSH when asked, and reviewed results. Every line of code, every failed
-experiment, every workaround discovery, and this README were produced by the
-agent across four sessions totalling 607 API turns and ~68M tokens ($51 at API
-pricing). See [Agent session cost](#agent-session-cost) for the full breakdown.
+coding agent (Claude Opus 4, running in [Pi][pi-agent]).** The human set up
+Termux/SSH on the phone manually in early February (boot scripts, cron, initial
+dark-photo scripts), then on March 21 handed the flash problem to the agent
+with: *"Your goal is to have the phone take a photo with the flash. Don't stop
+until you've succeeded."* From that point, the human's role was limited to
+physically connecting/disconnecting the USB cable, starting SSH when asked,
+and reviewing results. Every line of Java, every shell script revision, every
+failed experiment, every workaround discovery, and this README were produced by
+the agent across four sessions totalling 607 API turns and ~68M tokens ($51 at
+API pricing). See [Agent session cost](#agent-session-cost) for the full
+breakdown.
 
 [claude-code]: https://claude.ai/code
 [pi-agent]: https://github.com/mariozechner/pi
@@ -50,9 +54,11 @@ and the limits of what an unprivileged app can do on a locked-down device.
 
 ## Full project timeline
 
-### Week 1: Initial setup (February 5–6, 2026)
+### Week 1: Initial setup (February 5–6, 2026) — manual, no agent
 
-The Honor NEM-L21 was set up manually (direct Termux interaction, no AI agents):
+The Honor NEM-L21 was set up manually by the human (direct Termux interaction,
+no AI agents involved – confirmed by searching all Pi, Claude Code, and
+pykoclaw session histories across both machines):
 
 - Installed Termux, Termux:Boot, Termux:API, F-Droid
 - Installed Dropbear SSH server, configured key-based auth
@@ -70,9 +76,9 @@ The Honor NEM-L21 was set up manually (direct Termux interaction, no AI agents):
   Photos were black. The torch LED turned off the instant Camera2 opened a new
   session – they share the same hardware.
 
-### Week 2: Cron-based automation (February 11, 2026)
+### Week 2: Cron-based automation (February 11, 2026) — manual, no agent
 
-Replaced the loop with cronie for reliability:
+Replaced the loop with cronie for reliability (still manual human work):
 
 - Installed `cronie`, `imagemagick` in Termux
 - Wrote `flash-photo.sh` – brought Termux to foreground before torch+capture
@@ -89,10 +95,11 @@ The cron job ran faithfully for six weeks, producing consistently dark photos.
 The phone ran on mains power, reporting via SSH. On March 8, internal storage
 filled up – photos started failing with ENOSPC until old files were cleaned.
 
-### Week 7: The flash breakthrough (March 21, 2026)
+### Week 7: The flash breakthrough (March 21–22, 2026) — all agent work
 
-Three intensive Pi (AI coding agent) sessions in a single day cracked the
-problem.
+Six weeks of dark photos later, the human handed the problem to a coding agent.
+Three intensive Pi sessions in a single day cracked the problem, followed by a
+fourth session the next morning for the APK, cron integration, and this repo.
 
 #### Session 1: Exploration (Pi session `9c4eed4e`, 17:36–20:20)
 
