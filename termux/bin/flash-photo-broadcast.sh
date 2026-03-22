@@ -42,10 +42,11 @@ fi
 
 # Report
 SIZE=$(du -h "$OUT" | cut -f1)
-B="N/A"
-if command -v magick >/dev/null 2>&1; then
-    B=$(magick "$OUT" -colorspace Gray -format "%[fx:mean*100]" info: 2>/dev/null || echo "N/A")
-fi
+B=$(python3 -c "
+from PIL import Image
+im = Image.open('$OUT').convert('L').resize((1,1))
+print(f'{im.getpixel((0,0))/2.55:.1f}')
+" 2>/dev/null || echo "N/A")
 echo "$(date): Saved $OUT ($SIZE, brightness: ${B}%)"
 
 # Clean up shared storage copy
