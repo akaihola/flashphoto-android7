@@ -229,7 +229,9 @@ by `am broadcast` from a Termux cron job.
 | No flash (dark room) | 0.01% | Essentially black |
 | Torch + termux-camera-photo | 0.01–0.4% | Torch killed by Camera2 session |
 | Camera2 `ALWAYS_FLASH` | 0.08% | HAL ignores, flash doesn't fire |
-| **FlashPhoto TORCH preview-frame (screen off)** | **12–16%** | ✅ Production method |
+| **FlashPhoto TORCH + manual exposure (production)** | **24%** | ✅ Production method (ISO 800, 100ms) |
+| FlashPhoto TORCH + auto-exposure (small room) | 12–16% | Works in small reflective spaces |
+| FlashPhoto TORCH + auto-exposure (large dark room) | 0.8–1.6% | AE underexposes |
 | FlashPhoto TORCH STILL_CAPTURE (screen off) | 0.3–14% | Unreliable – HAL kills torch |
 | FlashPhoto TORCH (screen on) | 28–29% | Better but screen must be on |
 | ADB + Huawei camera app | 27–44% | Requires USB cable |
@@ -354,7 +356,13 @@ The APK contains a single exported `BroadcastReceiver` (`FlashReceiver`) that:
 Optional broadcast extras for tuning:
 - `--ei warmup <ms>` – torch warmup before saving (default: 2000)
 - `--ei skip <N>` – preview frames to skip after warmup (default: 5)
-- `--ez still true` – use STILL_CAPTURE instead (for comparison)
+- `--ei iso <value>` – manual ISO sensitivity (0 = auto, try 400–1600)
+- `--ei exposure_ms <value>` – manual exposure time in ms (0 = auto, try 33–100)
+
+**Production defaults:** ISO 800 + 100ms exposure. Auto-exposure fails in
+large dark rooms because the AE algorithm sees mostly darkness and
+underexposes despite the torch being on. See [EXPERIMENTS.md] for the
+full tuning data.
 
 ### Key design decisions
 
@@ -391,7 +399,6 @@ Optional broadcast extras for tuning:
 
 ### Immediate
 
-- [ ] Explore manual exposure/ISO control for more consistent brightness
 - [ ] Set up photo retrieval pipeline (SCP/rsync from phone to server)
 - [ ] Address PowerGenie killing Termux services (uninstall via ADB or
   mark Termux as protected in EMUI battery settings)

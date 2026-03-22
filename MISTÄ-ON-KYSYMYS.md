@@ -145,7 +145,7 @@ tarvitse koskea puhelimeen. Kolmen tunnin välein puhelimen oma ajastin
 käynnistää sovelluksen, ja puhelin ottaa kuvan.
 
 Tulokset ovat selkeitä. Ilman salamaa kuvan keskimääräinen kirkkaus on 0,01 % –
-käytännössä musta. Salamavaloratkaisulla kirkkaus on 12–16 % – riittävä
+käytännössä musta. Salamavaloratkaisulla kirkkaus on noin 24 % – riittävä
 mittareiden lukemiseen.
 
 ---
