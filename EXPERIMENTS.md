@@ -45,8 +45,26 @@ keeps the torch on throughout.
   caused by the phone being plugged into a power socket. EMUI may throttle
   differently on AC vs battery. Needs testing.
 
+## AC power test (phone plugged into charger)
+
+| Test  | Brightness | Notes                              |
+| ----- | ---------- | ---------------------------------- |
+| AC T1 | 12.2%      |                                    |
+| AC T2 | 12.9%      |                                    |
+| AC T3 | 13.3%      |                                    |
+| AC T4 | 12.9%      |                                    |
+
+**Result:** 12–13% on AC, consistent. Slightly lower than battery (15–16%)
+but fully usable. The previous 0.3% failures were caused by
+`TEMPLATE_STILL_CAPTURE` killing the torch – not by AC power.
+
+## Conclusion
+
+The preview-frame save strategy is reliable on both battery and AC power.
+The old `STILL_CAPTURE` approach was the root cause of intermittent dark
+photos, not the power source.
+
 ## TODO
 
-- [ ] Test with phone plugged into power socket (AC adapter)
 - [ ] Verify wakelock impact with controlled on/off comparison
 - [ ] Consider increasing ImageReader buffer or using YUV for faster preview
