@@ -175,9 +175,6 @@ public class FlashReceiver extends BroadcastReceiver {
             } catch (Exception e) {
                 Log.e(TAG, "Save err", e);
             } finally {
-                if (img != null && !img.getTimestamp().equals(null)) {
-                    // img already closed above in each branch
-                }
                 if (saved.get()) {
                     reader.close();
                     camera.close();
