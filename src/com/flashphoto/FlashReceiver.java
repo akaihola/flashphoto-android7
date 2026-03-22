@@ -27,7 +27,25 @@ import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Takes a torch-illuminated photo via Camera2 API.
+ *
+ * Strategy: uses TEMPLATE_PREVIEW with FLASH_MODE_TORCH on a full-resolution
+ * JPEG ImageReader. After warmup, saves a preview frame directly — avoiding
+ * the TEMPLATE_STILL_CAPTURE which causes Huawei EMUI to kill the torch.
+ *
+ * Trigger:
+ *   am broadcast -n com.flashphoto/.FlashReceiver -a com.flashphoto.TAKE \
+ *     -e file /path/to/photo.jpg
+ *
+ * Optional extras:
+ *   -e camera 0           camera ID (default: 0 = rear)
+ *   --ei warmup 2000      torch warmup ms before saving (default: 2000)
+ *   --ei skip 5           preview frames to skip after warmup (default: 5)
+ *   --ez still false      use STILL_CAPTURE instead of preview save (default: false)
+ */
 public class FlashReceiver extends BroadcastReceiver {
     private static final String TAG = "FlashPhoto";
 
@@ -37,21 +55,29 @@ public class FlashReceiver extends BroadcastReceiver {
         String cameraId = intent.getStringExtra("camera");
         if (cameraId == null) cameraId = "0";
         
+        int warmupMs = intent.getIntExtra("warmup", 2000);
+        int skipFrames = intent.getIntExtra("skip", 5);
+        boolean useStill = intent.getBooleanExtra("still", false);
+
         if (filePath == null || filePath.isEmpty()) {
             Log.e(TAG, "No file. Use: am broadcast -a com.flashphoto.TAKE -e file /path/to/photo.jpg");
             return;
         }
 
-        Log.i(TAG, "Taking torch photo -> " + filePath);
+        Log.i(TAG, "Config: file=" + filePath
+            + " warmup=" + warmupMs + "ms skip=" + skipFrames
+            + " still=" + useStill);
         File outFile = new File(filePath);
         File parent = outFile.getParentFile();
         if (parent != null && !parent.exists()) parent.mkdirs();
         
         final PendingResult pendingResult = goAsync();
-        takePicture(context, outFile, cameraId, pendingResult);
+        takePicture(context, outFile, cameraId, warmupMs, skipFrames, useStill, pendingResult);
     }
 
-    private void takePicture(Context context, File outputFile, String cameraId, PendingResult pendingResult) {
+    private void takePicture(Context context, File outputFile, String cameraId,
+                              int warmupMs, int skipFrames, boolean useStill,
+                              PendingResult pendingResult) {
         HandlerThread ht = new HandlerThread("Cam");
         ht.start();
         Handler handler = new Handler(ht.getLooper());
@@ -63,14 +89,21 @@ public class FlashReceiver extends BroadcastReceiver {
                 @Override
                 public void onOpened(CameraDevice camera) {
                     try {
-                        captureWithTorch(mgr, camera, cameraId, outputFile, handler, ht, pendingResult);
+                        captureWithTorch(mgr, camera, cameraId, outputFile, handler, ht,
+                                         warmupMs, skipFrames, useStill, pendingResult);
                     } catch (Exception e) {
                         Log.e(TAG, "onOpened error", e);
                         camera.close(); ht.quitSafely(); pendingResult.finish();
                     }
                 }
-                @Override public void onDisconnected(CameraDevice c) { c.close(); ht.quitSafely(); pendingResult.finish(); }
-                @Override public void onError(CameraDevice c, int e) { Log.e(TAG, "Open err: "+e); c.close(); ht.quitSafely(); pendingResult.finish(); }
+                @Override public void onDisconnected(CameraDevice c) {
+                    Log.w(TAG, "Camera disconnected");
+                    c.close(); ht.quitSafely(); pendingResult.finish();
+                }
+                @Override public void onError(CameraDevice c, int e) {
+                    Log.e(TAG, "Open err: " + e);
+                    c.close(); ht.quitSafely(); pendingResult.finish();
+                }
             }, handler);
         } catch (Exception e) {
             Log.e(TAG, "Open failed", e);
@@ -80,6 +113,7 @@ public class FlashReceiver extends BroadcastReceiver {
 
     private void captureWithTorch(CameraManager mgr, CameraDevice camera, String cameraId,
                                    File outputFile, Handler handler, HandlerThread ht,
+                                   int warmupMs, int skipFrames, boolean useStill,
                                    PendingResult pendingResult) throws CameraAccessException {
         
         CameraCharacteristics chars = mgr.getCameraCharacteristics(cameraId);
@@ -92,12 +126,13 @@ public class FlashReceiver extends BroadcastReceiver {
                 largest = s;
         Log.i(TAG, "Size: " + largest);
         
-        // NO SurfaceTexture! Use only ImageReader.
-        // This avoids the OpenGL context dependency that fails when screen is off.
-        final ImageReader reader = ImageReader.newInstance(largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 4);
+        final ImageReader reader = ImageReader.newInstance(
+            largest.getWidth(), largest.getHeight(), ImageFormat.JPEG, 4);
         
-        // Flag: only save the final capture, discard preview frames
-        final AtomicBoolean doSave = new AtomicBoolean(false);
+        // Phase tracking: 0=warmup (discard all), 1=skipping (count down), 2=save next
+        final AtomicInteger phase = new AtomicInteger(0);
+        final AtomicInteger skipsLeft = new AtomicInteger(skipFrames);
+        final AtomicBoolean saved = new AtomicBoolean(false);
         
         reader.setOnImageAvailableListener(r -> {
             Image img = null;
@@ -105,8 +140,27 @@ public class FlashReceiver extends BroadcastReceiver {
                 img = r.acquireLatestImage();
                 if (img == null) return;
                 
-                if (!doSave.get()) {
-                    // Preview frame - discard
+                int p = phase.get();
+                if (p == 0) {
+                    // Warmup phase - discard
+                    img.close();
+                    return;
+                }
+                
+                if (p == 1) {
+                    // Skip phase - count down
+                    int left = skipsLeft.decrementAndGet();
+                    Log.d(TAG, "Skip frame, " + left + " remaining");
+                    img.close();
+                    if (left <= 0) {
+                        phase.set(2);
+                        Log.i(TAG, "Ready to save next frame");
+                    }
+                    return;
+                }
+                
+                // p == 2: save this frame
+                if (saved.getAndSet(true)) {
                     img.close();
                     return;
                 }
@@ -121,9 +175,10 @@ public class FlashReceiver extends BroadcastReceiver {
             } catch (Exception e) {
                 Log.e(TAG, "Save err", e);
             } finally {
-                if (img != null) img.close();
-                // Only close on actual capture (not preview frames)
-                if (doSave.get()) {
+                if (img != null && !img.getTimestamp().equals(null)) {
+                    // img already closed above in each branch
+                }
+                if (saved.get()) {
                     reader.close();
                     camera.close();
                     ht.quitSafely();
@@ -134,48 +189,72 @@ public class FlashReceiver extends BroadcastReceiver {
         
         Surface readerSurface = reader.getSurface();
         
-        // Session with ONLY the ImageReader surface - no SurfaceTexture needed
-        camera.createCaptureSession(Arrays.asList(readerSurface), new CameraCaptureSession.StateCallback() {
+        camera.createCaptureSession(Arrays.asList(readerSurface),
+            new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(CameraCaptureSession session) {
                 try {
-                    // Step 1: "Preview" frames to ImageReader with TORCH to stabilize AE
-                    // These frames are discarded by the listener (doSave=false)
-                    CaptureRequest.Builder preview = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                    // Start repeating preview with TORCH on the JPEG ImageReader
+                    CaptureRequest.Builder preview = camera.createCaptureRequest(
+                        CameraDevice.TEMPLATE_PREVIEW);
                     preview.addTarget(readerSurface);
-                    preview.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    preview.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-                    preview.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
+                    preview.set(CaptureRequest.CONTROL_AF_MODE,
+                        CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    preview.set(CaptureRequest.CONTROL_AE_MODE,
+                        CameraMetadata.CONTROL_AE_MODE_ON);
+                    preview.set(CaptureRequest.FLASH_MODE,
+                        CameraMetadata.FLASH_MODE_TORCH);
                     
-                    session.setRepeatingRequest(preview.build(), null, handler);
-                    Log.i(TAG, "Preview+TORCH started (AE converging)");
+                    session.setRepeatingRequest(preview.build(),
+                        new CameraCaptureSession.CaptureCallback() {
+                            @Override
+                            public void onCaptureCompleted(CameraCaptureSession s,
+                                CaptureRequest r, TotalCaptureResult result) {
+                                if (phase.get() == 2 && !saved.get()) {
+                                    Integer fs = result.get(CaptureResult.FLASH_STATE);
+                                    Integer fm = result.get(CaptureResult.FLASH_MODE);
+                                    Long expNs = result.get(CaptureResult.SENSOR_EXPOSURE_TIME);
+                                    Integer iso = result.get(CaptureResult.SENSOR_SENSITIVITY);
+                                    Log.i(TAG, "Save frame: FLASH_STATE=" + fs
+                                        + " FLASH_MODE=" + fm
+                                        + " exp=" + (expNs != null ? expNs/1000000 + "ms" : "?")
+                                        + " ISO=" + iso);
+                                }
+                            }
+                        }, handler);
+                    Log.i(TAG, "Preview+TORCH started, warming up " + warmupMs + "ms");
                     
-                    // Wait for torch + AE to stabilize
-                    Thread.sleep(2000);
-                    session.stopRepeating();
-                    
-                    // Drain any pending preview frames
-                    Thread.sleep(500);
-                    Log.i(TAG, "Capturing...");
-                    
-                    // Step 2: Actual capture
-                    doSave.set(true);
-                    CaptureRequest.Builder cap = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                    cap.addTarget(readerSurface);
-                    cap.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                    cap.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
-                    cap.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
-                    
-                    Integer orient = chars.get(CameraCharacteristics.SENSOR_ORIENTATION);
-                    if (orient != null) cap.set(CaptureRequest.JPEG_ORIENTATION, orient);
-                    
-                    session.capture(cap.build(), new CameraCaptureSession.CaptureCallback() {
-                        @Override
-                        public void onCaptureCompleted(CameraCaptureSession s, CaptureRequest r, TotalCaptureResult result) {
-                            Integer fs = result.get(CaptureResult.FLASH_STATE);
-                            Log.i(TAG, "Capture done, FLASH_STATE=" + fs);
+                    // Warmup in background thread
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(warmupMs);
+                            Log.i(TAG, "Warmup done, skipping " + skipFrames + " frames");
+                            phase.set(1);
+                            
+                            if (useStill) {
+                                // Alternative: issue still capture while preview runs
+                                Thread.sleep(500);
+                                Log.i(TAG, "Issuing STILL_CAPTURE...");
+                                phase.set(2);
+                                CaptureRequest.Builder cap = camera.createCaptureRequest(
+                                    CameraDevice.TEMPLATE_STILL_CAPTURE);
+                                cap.addTarget(readerSurface);
+                                cap.set(CaptureRequest.CONTROL_AF_MODE,
+                                    CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                                cap.set(CaptureRequest.CONTROL_AE_MODE,
+                                    CameraMetadata.CONTROL_AE_MODE_ON);
+                                cap.set(CaptureRequest.FLASH_MODE,
+                                    CameraMetadata.FLASH_MODE_TORCH);
+                                Integer orient = chars.get(
+                                    CameraCharacteristics.SENSOR_ORIENTATION);
+                                if (orient != null)
+                                    cap.set(CaptureRequest.JPEG_ORIENTATION, orient);
+                                session.capture(cap.build(), null, handler);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Timer error", e);
                         }
-                    }, handler);
+                    }).start();
                     
                 } catch (Exception e) {
                     Log.e(TAG, "Capture error", e);
