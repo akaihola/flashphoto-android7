@@ -11,17 +11,18 @@ Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography �
 **no USB cable, no screen wake, no human interaction required**.
 
 **All research, experimentation, scripting, Java/APK development, on-device
-testing, and documentation in this project was performed autonomously by a
-coding agent (Claude Opus 4, running in [Pi][pi-agent]).** The human set up
-Termux/SSH on the phone manually in early February (boot scripts, cron, initial
-dark-photo scripts), then on March 21 handed the flash problem to the agent
-with: *"Your goal is to have the phone take a photo with the flash. Don't stop
-until you've succeeded."* From that point, the human's role was limited to
-physically connecting/disconnecting the USB cable, starting SSH when asked,
-and reviewing results. Every line of Java, every shell script revision, every
-failed experiment, every workaround discovery, and this README were produced by
-the agent across four sessions totalling 607 API turns and ~68M tokens ($51 at
-API pricing). See [Agent session cost](#agent-session-cost) for the full
+testing, and documentation in this project was performed autonomously by coding
+agents.** In early February, the OpenClaw agent ("Clawd", later renamed Tyko)
+running on gogo researched Android camera options, wrote the initial timelapse
+scripts, and documented ADB/Termux tricks – all via Telegram chat with the
+human. Then on March 21, a Pi agent (Claude Opus 4) on atom tackled the flash
+problem: *"Your goal is to have the phone take a photo with the flash. Don't
+stop until you've succeeded."* The human's role throughout was providing the
+goal, answering clarifying questions, physically connecting/disconnecting the
+USB cable, and starting SSH when asked. Every line of code, every failed
+experiment, every workaround discovery, and this README were produced by agents
+across **13 sessions totalling 1,395 API turns and ~131M tokens ($110 at API
+pricing)**. See [Agent session cost](#agent-session-cost) for the full
 breakdown.
 
 [claude-code]: https://claude.ai/code
@@ -54,11 +55,15 @@ and the limits of what an unprivileged app can do on a locked-down device.
 
 ## Full project timeline
 
-### Week 1: Initial setup (February 5–6, 2026) — manual, no agent
+### Week 1: Initial setup (February 5–6, 2026) — OpenClaw agent on gogo
 
-The Honor NEM-L21 was set up manually by the human (direct Termux interaction,
-no AI agents involved – confirmed by searching all Pi, Claude Code, and
-pykoclaw session histories across both machines):
+The Honor NEM-L21 was set up by the OpenClaw agent ("Clawd") running on gogo,
+directed by the human via Telegram. The agent researched 5 approaches for
+periodic Android photography (see `termux/docs/android-periodic-photos.md`),
+wrote the ADB/Termux knowledge base (`android-tricks.md`), created the initial
+`honor-timelapse.sh` trigger script, and documented everything. Sessions found
+in `/home/agent/.openclaw/agents/clawd/sessions/` on gogo (9 sessions, 788 API
+turns, $59.14):
 
 - Installed Termux, Termux:Boot, Termux:API, F-Droid
 - Installed Dropbear SSH server, configured key-based auth
@@ -76,9 +81,10 @@ pykoclaw session histories across both machines):
   Photos were black. The torch LED turned off the instant Camera2 opened a new
   session – they share the same hardware.
 
-### Week 2: Cron-based automation (February 11, 2026) — manual, no agent
+### Week 2: Cron-based automation (February 11, 2026) — manual by human
 
-Replaced the loop with cronie for reliability (still manual human work):
+Replaced the loop with cronie for reliability (manual human work on the phone,
+no agent sessions found for this period):
 
 - Installed `cronie`, `imagemagick` in Termux
 - Wrote `flash-photo.sh` – brought Termux to foreground before torch+capture
@@ -391,9 +397,26 @@ Planned work:
 
 ## Agent session cost
 
-All work was performed by Claude Opus 4 across four Pi sessions on March 21–22,
-2026. Token counts and costs are from the Anthropic API usage logs embedded in
-each session file.
+Token counts and costs are from the Anthropic API usage logs embedded in each
+session file. Three agent platforms were used across the project's lifetime.
+
+### Phase 1: OpenClaw agent on gogo (February 5–7, 2026)
+
+The OpenClaw agent ("Clawd", later Tyko) ran on gogo, accessed via Telegram.
+Sessions stored in `/home/agent/.openclaw/agents/clawd/sessions/`.
+
+| Session | Focus | Turns | Output tokens | Cache (read+write) | Cost |
+|---------|-------|------:|-------------:|-----------:|-----:|
+| `d16c0a1c` | Research: 5 Android camera approaches | 161 | 33,777 | 9.9M + 1.1M | $10.09 |
+| `46214d5a` | Phone setup, Termux, SSH, ADB | 38 | 13,035 | 2.8M + 1.5M | $5.71 |
+| `58f429ac` | android-periodic-photos.md docs | 26 | 7,000 | 674K + 186K | $1.38 |
+| `07ccd2b0` | Timelapse scripts, boot config | 474 | 98,037 | 41.5M + 3.2M | $39.05 |
+| 5 smaller | ADB tricks, cleanup, migration | 89 | 17,986 | 1.6M + 676K | $2.90 |
+| **Subtotal** | | **788** | **169,835** | **56.5M + 6.7M** | **$59.14** |
+
+### Phase 2: Pi agent on atom (March 21–22, 2026)
+
+Pi sessions (Claude Opus 4) on atom. Session logs in `~/.pi/agent/sessions/`.
 
 | Session | Focus | Turns | Output tokens | Cache (read+write) | Cost |
 |---------|-------|------:|-------------:|-----------:|-----:|
@@ -401,7 +424,13 @@ each session file.
 | `7138154e` | Brief intermediate | 6 | 1,087 | 120K + 39K | $0.33 |
 | `12acdef4` | Self-loopback ADB, production script | 210 | 60,025 | 20.0M + 254K | $13.11 |
 | `d98b9bef` | FlashPhoto APK, TORCH discovery, cron setup | 178 | 95,561 | 20.6M + 812K | $17.74 |
-| **Total** | | **607** | **236,426** | **65.8M + 1.9M** | **$50.73** |
+| **Subtotal** | | **607** | **236,426** | **65.8M + 1.9M** | **$50.73** |
+
+### Grand total
+
+| | Turns | Output tokens | Cache (read+write) | Cost |
+|---|------:|-------------:|-----------:|-----:|
+| **All 13 sessions** | **1,395** | **406,261** | **122.3M + 8.6M** | **$109.87** |
 
 The high cache-read volume reflects the iterative nature of the work: each API
 turn re-sends the full conversation context (including tool results from SSH
