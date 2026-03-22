@@ -1,0 +1,10 @@
+# Timelapse cron - photo every 3 hours + service watchdog
+# Reload with: crontab ~/crontab
+SHELL=/data/data/com.termux/files/usr/bin/bash
+PATH=/data/data/com.termux/files/usr/bin
+
+# Service watchdog - check every 15 minutes
+*/15 * * * * ~/bin/service-watchdog.sh
+
+# Take photo at :00 every 3 hours, log to cron.log
+0 */3 * * * ~/bin/timelapse-cron.sh >> ~/cron.log 2>&1

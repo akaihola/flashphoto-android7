@@ -1,0 +1,5 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Start at boot: wake lock + SSH + crond (for timelapse)
+termux-wake-lock
+dropbear -s
+crond
