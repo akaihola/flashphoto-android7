@@ -28,8 +28,8 @@ Android-puhelimen pieneksi Linux-tietokoneeksi. Termuxin avulla puhelimeen saa
 SSH-etäyhteyden: sitä voi ohjata toiselta tietokoneelta samalla tavalla kuin
 mitä tahansa palvelinta.
 
-Tämän alkutyön teki tekoälyagentti nimeltä Clawd (myöhemmin nimetty uudelleen
-Tykoksi), joka toimi toisella kotitietokoneella ja keskusteli ihmisen kanssa
+Tämän alkutyön teki tekoälyagentti nimeltä Tyko, joka toimi toisella
+kotitietokoneella ja keskusteli ihmisen kanssa
 Telegramin kautta. Agentti tutki viisi eri tapaa ottaa valokuvia Androidilla
 ajastettuna, vertaili niiden etuja ja haittoja, ja suositteli komentorivillä
 toimivaa Termux-ratkaisua. Se kirjoitti käynnistysskriptit, ajasti valokuvauksen
@@ -44,11 +44,11 @@ Kaikki näytti hyvältä – paitsi yksi asia. Kuvat olivat täysin mustia.
 
 Android-puhelimen kamera ja LED-salamavalo jakavat saman laitteiston. Kun
 kamerasovellus avaa kameran ottaakseen kuvan, se ottaa salamavalon yksinoikeudella
-haltuunsa. Jos taskulamppu on päällä valokuvaa otettaessa, kamera sammuttaa sen
+haltuunsa. Jos salamavalo on päällä valokuvaa otettaessa, kamera sammuttaa sen
 ensin – ja ottaa sitten kuvan pimeässä.
 
 Tämä on suunnittelupäätös, ei virhe. Android-käyttöjärjestelmä toimii näin
-tarkoituksella, koska kamera ja taskulamppu eivät voi toimia samanaikaisesti
+tarkoituksella, koska kamera ja salamavalo eivät voi toimia samanaikaisesti
 ilman erityistä koordinaatiota. Normaali kamerasovellus hoitaa tämän
 koordinaation sisäisesti: se sytyttää salamavalon juuri oikealla hetkellä
 valotuksen aikana. Mutta komentorivillä toimiva Termux-työkalu ei tätä osaa.
@@ -74,8 +74,8 @@ lähestymistapaa – joista yhdeksän epäonnistui.
 
 ## Osa 4: Kymmenen yritystä
 
-**Yritys 1: Taskulamppu päälle, kuva, taskulamppu pois.** Kamera sammutti
-taskulampun. Musta kuva.
+**Yritys 1: Salamavalo päälle, kuva, salamavalo pois.** Kamera sammutti
+salamavalon. Musta kuva.
 
 **Yritys 2: Oma Java-ohjelma, joka käskee kameraa käyttämään salamaa.** Android
 tappoi ohjelman välittömästi, koska se ei ollut virallisesti asennettu
@@ -141,11 +141,11 @@ sytyttää LED-valon taskulamppumoodissa, odottaa kaksi sekuntia valon ja
 kameran tasapainottumista, ottaa kuvan ja tallentaa sen.
 
 Puhelimeen ei tarvita USB-kaapelia, näyttöä ei tarvitse herättää, kenenkään ei
-tarvitse koskea puhelimeen. Kolmen tunnin välein ajastettu tehtävä lähettää
-Wi-Fin yli komennon, ja puhelin ottaa kuvan.
+tarvitse koskea puhelimeen. Kolmen tunnin välein puhelimen oma ajastin
+käynnistää sovelluksen, ja puhelin ottaa kuvan.
 
 Tulokset ovat selkeitä. Ilman salamaa kuvan keskimääräinen kirkkaus on 0,01 % –
-käytännössä musta. Taskulamppuratkaisulla kirkkaus on 7–14 % – riittävä
+käytännössä musta. Salamavaloratkaisulla kirkkaus on 7–14 % – riittävä
 mittareiden lukemiseen.
 
 ---
@@ -159,7 +159,7 @@ SSH-yhteys uudelleen silloin, kun tekoäly ei siihen itse kyennyt.
 
 Työ jakautui kahteen vaiheeseen kahdella eri tekoälyalustalla:
 
-**Helmikuu 2026:** OpenClaw-agentti "Clawd" (myöhemmin Tyko) – tutkimus,
+**Helmikuu 2026:** OpenClaw-agentti Tyko – tutkimus,
 puhelimen käyttöönotto, ensimmäiset skriptit, dokumentointi. Yhdeksän istuntoa,
 yhteensä 788 API-kutsua.
 
@@ -179,11 +179,10 @@ on opettaa tekoälyä lukemaan mittareita kuvista:
 
 - **Kylmän veden mittari** – kuutiometrejä, juoksevat numerot
 - **Lämpimän veden mittari** – samoin
-- **Kaukolämpömittari** – megawattitunteja
 - **Patterilämmityksen painemittari** – bareja, analoginen viisari
 - **Patterilämmityksen lämpötilamittari** – celsiusasteita, analoginen viisari
 
-Tavoitteena on seurata veden- ja lämmönkulutusta automaattisesti sekä hälyttää
+Tavoitteena on seurata vedenkulutusta ja lämmitysjärjestelmän tilaa automaattisesti sekä hälyttää
 poikkeavuuksista – esimerkiksi äkillisestä vedenkulutuksen kasvusta (vuoto?) tai
 lämmityspaineen laskusta (ilmaa järjestelmässä?).
 
