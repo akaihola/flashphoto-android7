@@ -12,7 +12,7 @@ Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography �
 
 **All research, experimentation, scripting, Java/APK development, on-device
 testing, and documentation in this project was performed autonomously by coding
-agents.** In early February, the OpenClaw agent ("Clawd", later renamed Tyko)
+agents.** In early February, the OpenClaw agent (Tyko)
 running on gogo researched Android camera options, wrote the initial timelapse
 scripts, and documented ADB/Termux tricks – all via Telegram chat with the
 human. Then on March 21, a Pi agent (Claude Opus 4) on atom tackled the flash
@@ -21,8 +21,8 @@ stop until you've succeeded."* The human's role throughout was providing the
 goal, answering clarifying questions, physically connecting/disconnecting the
 USB cable, and starting SSH when asked. Every line of code, every failed
 experiment, every workaround discovery, and this README were produced by agents
-across **13 sessions totalling 1,395 API turns and ~131M tokens ($110 at API
-pricing)**. See [Agent session cost](#agent-session-cost) for the full
+across **13+ sessions totalling 1,395+ API turns and ~131M+ tokens ($110+ at
+API pricing)**. See [Agent session cost](#agent-session-cost) for the full
 breakdown.
 
 [claude-code]: https://claude.ai/code
@@ -38,11 +38,10 @@ running [Termux][termux] with SSH access. A cron job takes a photo every three
 hours.
 
 The immediate goal is to capture flash-illuminated images of the utility gauges
-in this otherwise dark space – cold water meter, hot water meter, district
-heating meter, and hydronic radiator heating pressure/temperature gauges. The
-longer-term vision is to develop machine reading of these analog gauge faces to
-automatically track water consumption, heating energy use, and system pressure
-over time.
+in this otherwise dark space – cold water meter, hot water meter, and hydronic
+radiator heating pressure/temperature gauges. The longer-term vision is to
+develop machine reading of these gauge faces to automatically track water
+consumption and heating system status over time.
 
 The catch: the room is dark. Without flash, photos are black (0.01% mean
 brightness). Getting the flash to fire from a headless SSH session turned out to
@@ -188,8 +187,21 @@ context, which is unavailable when the screen is off. Error:
 `createStream: Failed to query Surface consumer usage: No such device (-19)`.
 Fix: use only `ImageReader` (no SurfaceTexture), discard preview frames.
 
-Final result: **7–14% brightness with screen off, fully autonomous**, triggered
-by `am broadcast` over SSH. The cron job was updated to use the new method.
+Initial result: 7–14% brightness with screen off, but intermittently dark
+(0.3%) due to timing race between torch and `TEMPLATE_STILL_CAPTURE`.
+
+#### Session 4: Preview-frame strategy (March 22, 2026)
+
+A follow-up session diagnosed the intermittent failures: on Huawei EMUI, the
+Camera2 HAL kills the torch LED when `TEMPLATE_STILL_CAPTURE` fires. The fix:
+**save a TORCH-lit preview frame directly** from the JPEG ImageReader, never
+issuing a still capture at all. This yielded **consistent 12–16% brightness**
+on both battery and AC power. See [EXPERIMENTS.md] for detailed timing results.
+
+Final result: **12–16% brightness with screen off, fully autonomous**, triggered
+by `am broadcast` from a Termux cron job.
+
+[EXPERIMENTS.md]: EXPERIMENTS.md
 
 ---
 
@@ -217,7 +229,8 @@ by `am broadcast` over SSH. The cron job was updated to use the new method.
 | No flash (dark room) | 0.01% | Essentially black |
 | Torch + termux-camera-photo | 0.01–0.4% | Torch killed by Camera2 session |
 | Camera2 `ALWAYS_FLASH` | 0.08% | HAL ignores, flash doesn't fire |
-| **FlashPhoto TORCH (screen off)** | **7–14%** | ✅ Production method |
+| **FlashPhoto TORCH preview-frame (screen off)** | **12–16%** | ✅ Production method |
+| FlashPhoto TORCH STILL_CAPTURE (screen off) | 0.3–14% | Unreliable – HAL kills torch |
 | FlashPhoto TORCH (screen on) | 28–29% | Better but screen must be on |
 | ADB + Huawei camera app | 27–44% | Requires USB cable |
 
@@ -272,7 +285,7 @@ ssh -p 8022 user@phone '~/bin/flash-photo-broadcast.sh ~/photos/custom.jpg'
 ```
 
 The wrapper handles directory creation, copies from shared storage to Termux
-private storage, measures brightness via ImageMagick, and cleans up.
+private storage, measures brightness via Pillow, and cleans up.
 
 ---
 
@@ -303,7 +316,7 @@ crond              # cron daemon for timelapse
 ### Installed Termux packages
 
 ```
-android-tools  apksigner  cronie  dropbear  ecj  imagemagick
+android-tools  apksigner  cronie  dropbear  ecj  python-pillow
 ```
 
 ### Scripts on the phone (`termux/bin/`)
@@ -332,19 +345,30 @@ The APK contains a single exported `BroadcastReceiver` (`FlashReceiver`) that:
 3. Opens Camera2 on a background `HandlerThread`
 4. Creates a capture session with **only an `ImageReader`** surface (no
    `SurfaceTexture` – avoids OpenGL dependency that fails with screen off)
-5. Runs repeating preview captures with `FLASH_MODE_TORCH` for 2 seconds
-   (LED on, AE converges; preview frames discarded via `AtomicBoolean` flag)
-6. Fires a single still capture with `FLASH_MODE_TORCH`
+5. Runs repeating preview requests with `FLASH_MODE_TORCH` on the JPEG
+   ImageReader for 2 seconds (LED on, AE converges; preview frames discarded)
+6. After warmup, saves a preview frame directly – **no `STILL_CAPTURE`**
+   (the Huawei HAL kills the torch when a still capture request fires)
 7. `ImageReader.OnImageAvailableListener` saves the JPEG and cleans up
+
+Optional broadcast extras for tuning:
+- `--ei warmup <ms>` – torch warmup before saving (default: 2000)
+- `--ei skip <N>` – preview frames to skip after warmup (default: 5)
+- `--ez still true` – use STILL_CAPTURE instead (for comparison)
 
 ### Key design decisions
 
 - **TORCH instead of ALWAYS_FLASH** – the EMUI HAL ignores standard flash
   modes but honors torch mode (shared code path with the flashlight feature)
+- **Preview-frame save instead of STILL_CAPTURE** – the HAL kills the torch
+  when `TEMPLATE_STILL_CAPTURE` fires; saving a TORCH-lit preview frame from
+  the JPEG ImageReader avoids this entirely (see [EXPERIMENTS.md])
 - **No SurfaceTexture** – fails when screen is off due to missing OpenGL
   context; `ImageReader`-only sessions work headlessly
 - **`goAsync()`** – BroadcastReceivers normally have a 10-second limit; this
   extends it for the full capture sequence (~5 seconds)
+
+[EXPERIMENTS.md]: EXPERIMENTS.md
 
 ### What failed and why
 
@@ -367,11 +391,10 @@ The APK contains a single exported `BroadcastReceiver` (`FlashReceiver`) that:
 
 ### Immediate
 
-- [ ] Test full reboot cycle without USB (verify boot script + broadcast method)
-- [ ] Optimize torch warm-up time (currently 2s – could be shorter)
-- [ ] Add retry logic for transient camera errors
 - [ ] Explore manual exposure/ISO control for more consistent brightness
 - [ ] Set up photo retrieval pipeline (SCP/rsync from phone to server)
+- [ ] Address PowerGenie killing Termux services (uninstall via ADB or
+  mark Termux as protected in EMUI battery settings)
 
 ### Gauge reading (next phase)
 
@@ -379,10 +402,8 @@ The phone will be pointed at the house mechanical room gauges:
 
 - **Cold water meter** – cumulative m³ consumption
 - **Hot water meter** – cumulative m³ consumption
-- **District heating energy meter** – cumulative MWh from the district heating
-  network (*kaukolämpö*)
-- **Hydronic heating gauges** – pressure (bar) and temperature (°C) of the
-  radiator circuit (*vesikiertoinen patterilämmitys*)
+- **Hydronic heating pressure gauge** – bar, analog dial
+- **Hydronic heating temperature gauge** – °C, analog dial
 
 Planned work:
 

@@ -135,7 +135,7 @@ kuvatiedostoon.
 
 ## Osa 5: Ratkaisu
 
-Lopullinen sovellus on pieni – noin 13 kilotavua, pienempi kuin tämä teksti.
+Lopullinen sovellus on pieni – noin 16 kilotavua, pienempi kuin tämä teksti.
 Se tekee yhden asian: kun Termux lähettää sille viestin, se avaa kameran,
 sytyttää LED-valon taskulamppumoodissa, odottaa kaksi sekuntia valon ja
 kameran tasapainottumista, ottaa kuvan ja tallentaa sen.
@@ -145,7 +145,7 @@ tarvitse koskea puhelimeen. Kolmen tunnin välein puhelimen oma ajastin
 käynnistää sovelluksen, ja puhelin ottaa kuvan.
 
 Tulokset ovat selkeitä. Ilman salamaa kuvan keskimääräinen kirkkaus on 0,01 % –
-käytännössä musta. Salamavaloratkaisulla kirkkaus on 7–14 % – riittävä
+käytännössä musta. Salamavaloratkaisulla kirkkaus on 12–16 % – riittävä
 mittareiden lukemiseen.
 
 ---
