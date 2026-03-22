@@ -1,13 +1,16 @@
 # FlashPhoto for Android 7 (EMUI)
 
+[![Built with Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-6f42c1?logo=anthropic&logoColor=white)](https://claude.ai/code)
+
+> This project is developed by an AI coding agent ([Claude][claude-code], via
+> [Pi][pi-agent]), with human oversight and direction.
+
 A minimal Android APK that takes flash-illuminated photos via Camera2 API,
 triggered by broadcast intent from Termux. Built to work autonomously on an
 Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography –
 **no USB cable, no screen wake, no human interaction required**.
 
-> **AI disclosure:** This project was created collaboratively by a human (Antti
-> Kaihola) and AI coding agents (Claude, via [Pi][pi-agent] and Claude Code).
-
+[claude-code]: https://claude.ai/code
 [pi-agent]: https://github.com/mariozechner/pi
 
 ---
