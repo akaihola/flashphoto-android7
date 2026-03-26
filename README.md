@@ -12,21 +12,25 @@ Honor NEM-L21 (Android 7.0, EMUI) deployed for periodic timelapse photography �
 
 **All research, experimentation, scripting, Java/APK development, on-device
 testing, and documentation in this project was performed autonomously by coding
-agents.** In early February, the OpenClaw agent (Tyko)
-running on gogo researched Android camera options, wrote the initial timelapse
-scripts, and documented ADB/Termux tricks – all via Telegram chat with the
-human. Then on March 21, a Pi agent (Claude Opus 4) on atom tackled the flash
-problem: *"Your goal is to have the phone take a photo with the flash. Don't
-stop until you've succeeded."* The human's role throughout was providing the
-goal, answering clarifying questions, physically connecting/disconnecting the
-USB cable, and starting SSH when asked. Every line of code, every failed
-experiment, every workaround discovery, and this README were produced by agents
-across **13+ sessions totalling 1,395+ API turns and ~131M+ tokens ($110+ at
-API pricing)**. See [Agent session cost](#agent-session-cost) for the full
-breakdown.
+agents.** In early February, [openclaw-termux][openclaw-termux] and its agent
+persona Tyko, running on gogo and backed by Claude Opus 4.5, researched
+Android camera options, wrote the initial timelapse scripts, and documented
+ADB/Termux tricks. Then on March 21, a Pi agent on atom, using mostly Claude
+Opus 4.6 and partly Claude Sonnet 4.6, tackled the flash problem: *"Your goal
+is to have the phone take a photo with the flash. Don't stop until you've
+succeeded."* The human's role throughout was providing the goal, answering
+clarifying questions, physically connecting/disconnecting the USB cable, and
+starting SSH when asked. The failed attempts described here were not
+hand-written inputs from the human – they came from the agents' own
+experiments, logs, errors, and image measurements. Every line of code, every
+failed experiment, every workaround discovery, and this README were produced by
+agents across **13+ sessions totalling 1,395+ API turns and ~131M+ tokens
+($110+ at API pricing)**. See [Agent session cost](#agent-session-cost) for the
+full breakdown.
 
 [claude-code]: https://claude.ai/code
 [pi-agent]: https://github.com/mariozechner/pi
+[openclaw-termux]: https://github.com/explysm/openclaw-termux
 
 ---
 
@@ -54,14 +58,15 @@ and the limits of what an unprivileged app can do on a locked-down device.
 
 ## Full project timeline
 
-### Week 1: Initial setup (February 5–6, 2026) — OpenClaw agent on gogo
+### Week 1: Initial setup (February 5–6, 2026) — openclaw-termux / Tyko on gogo
 
-The Honor NEM-L21 was set up by the OpenClaw agent ("Clawd") running on gogo,
-directed by the human via Telegram. The agent researched 5 approaches for
-periodic Android photography (see `termux/docs/android-periodic-photos.md`),
-wrote the ADB/Termux knowledge base (`android-tricks.md`), created the initial
-`honor-timelapse.sh` trigger script, and documented everything. Sessions found
-in `/home/agent/.openclaw/agents/clawd/sessions/` on gogo (9 sessions, 788 API
+The Honor NEM-L21 was set up by [openclaw-termux][openclaw-termux] and its
+agent persona Tyko, running in Termux on gogo and backed by Claude Opus 4.5.
+The agent researched 5 approaches for periodic Android photography (see
+`termux/docs/android-periodic-photos.md`), wrote the ADB/Termux knowledge base
+(`android-tricks.md`), created the initial `honor-timelapse.sh` trigger
+script, and documented everything. Archived session logs are under
+`/home/akaihola/my-knowledge/archives/openclaw-sessions/` (9 sessions, 788 API
 turns, $59.14):
 
 - Installed Termux, Termux:Boot, Termux:API, F-Droid
@@ -102,9 +107,10 @@ filled up – photos started failing with ENOSPC until old files were cleaned.
 
 ### Week 7: The flash breakthrough (March 21–22, 2026) — all agent work
 
-Six weeks of dark photos later, the human handed the problem to a coding agent.
-Three intensive Pi sessions in a single day cracked the problem, followed by a
-fourth session the next morning for the APK, cron integration, and this repo.
+Six weeks of dark photos later, the human handed the problem to a Pi coding
+agent on atom. Three intensive Pi sessions in a single day, using Claude Opus
+4.6, cracked the problem, followed by a fourth session the next morning for the
+APK, cron integration, and this repo.
 
 #### Session 1: Exploration (Pi session `9c4eed4e`, 17:36–20:20)
 
@@ -349,20 +355,44 @@ The APK contains a single exported `BroadcastReceiver` (`FlashReceiver`) that:
    `SurfaceTexture` – avoids OpenGL dependency that fails with screen off)
 5. Runs repeating preview requests with `FLASH_MODE_TORCH` on the JPEG
    ImageReader for 2 seconds (LED on, AE converges; preview frames discarded)
-6. After warmup, saves a preview frame directly – **no `STILL_CAPTURE`**
+6. **Waits for autofocus lock** before saving (or uses manual focus distance) –
+   sends `AF_TRIGGER_START`, monitors `CONTROL_AF_STATE` for `FOCUSED_LOCKED`,
+   falls back to saving anyway after a configurable timeout
+7. Saves a TORCH-lit preview frame directly – **no `STILL_CAPTURE`**
    (the Huawei HAL kills the torch when a still capture request fires)
-7. `ImageReader.OnImageAvailableListener` saves the JPEG and cleans up
+8. `ImageReader.OnImageAvailableListener` saves the JPEG and cleans up
 
 Optional broadcast extras for tuning:
-- `--ei warmup <ms>` – torch warmup before saving (default: 2000)
-- `--ei skip <N>` – preview frames to skip after warmup (default: 5)
+- `--ei warmup <ms>` – torch warmup before AF lock (default: 2000)
+- `--ei skip <N>` – preview frames to skip after warmup (manual focus only, default: 5)
 - `--ei iso <value>` – manual ISO sensitivity (0 = auto, try 400–1600)
 - `--ei exposure_ms <value>` – manual exposure time in ms (0 = auto, try 33–100)
+- `--ef focus_diopters <float>` – manual focus distance in diopters (default: -1 = autofocus).
+  Examples: `2.0` for ~50 cm, `3.3` for ~30 cm, `1.0` for ~1 m, `0.0` for infinity.
+  Best for fixed-mount setups where the distance to the subject doesn't change.
+- `--ei af_timeout <ms>` – AF lock timeout before saving anyway (default: 3000).
+  If autofocus can't converge within this time, the best available frame is saved
+  rather than losing the shot.
 
-**Production defaults:** ISO 800 + 100ms exposure. Auto-exposure fails in
+**Production defaults:** ISO 800 + 100 ms exposure. Auto-exposure fails in
 large dark rooms because the AE algorithm sees mostly darkness and
 underexposes despite the torch being on. See [EXPERIMENTS.md] for the
 full tuning data.
+
+#### Focus modes
+
+**Autofocus (default):** After the torch warmup period, the receiver triggers
+an explicit AF lock (`AF_TRIGGER_START`) and waits for `FOCUSED_LOCKED` or
+`NOT_FOCUSED_LOCKED` before saving. Every frame logs AF state, focus distance,
+and lens state via `logcat -s FlashPhoto` for diagnostics. If the AF lock
+doesn't converge within `af_timeout` ms, the frame is saved anyway.
+
+**Manual focus (`--ef focus_diopters <value>`):** Sets `CONTROL_AF_MODE_OFF`
+and a fixed `LENS_FOCUS_DISTANCE`. Ideal for a phone mounted at a known
+distance from gauges – eliminates AF hunting entirely. After warmup, skips
+`skip` frames to let the lens settle, then saves. To calibrate: take a test
+shot with autofocus enabled, check the logged focus distance, then use that
+value for subsequent shots.
 
 ### Key design decisions
 
@@ -371,10 +401,18 @@ full tuning data.
 - **Preview-frame save instead of STILL_CAPTURE** – the HAL kills the torch
   when `TEMPLATE_STILL_CAPTURE` fires; saving a TORCH-lit preview frame from
   the JPEG ImageReader avoids this entirely (see [EXPERIMENTS.md])
+- **AF lock before save** – `CONTINUOUS_PICTURE` AF can be mid-hunt when a
+  frame is captured; triggering `AF_TRIGGER_START` and waiting for
+  `FOCUSED_LOCKED` ensures the lens has converged before saving
+- **Manual focus option** – for fixed-mount setups, `CONTROL_AF_MODE_OFF` with
+  a calibrated `LENS_FOCUS_DISTANCE` eliminates AF hunting entirely
+- **Save on AF timeout** – if the HAL doesn't report AF convergence (broken
+  state reporting or genuinely unfocusable scene), the frame is saved anyway
+  after a timeout rather than losing the shot
 - **No SurfaceTexture** – fails when screen is off due to missing OpenGL
   context; `ImageReader`-only sessions work headlessly
 - **`goAsync()`** – BroadcastReceivers normally have a 10-second limit; this
-  extends it for the full capture sequence (~5 seconds)
+  extends it for the full capture sequence (~5–8 seconds with AF lock)
 
 [EXPERIMENTS.md]: EXPERIMENTS.md
 

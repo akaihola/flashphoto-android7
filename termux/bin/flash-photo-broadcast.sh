@@ -22,11 +22,14 @@ mkdir -p "$(dirname "$OUT")"
 # Take photo via broadcast (FlashPhoto app handles camera+flash)
 # Manual exposure: ISO 800 + 100ms works for the dark utility room.
 # Auto-exposure fails because AE sees mostly darkness and underexposes.
+# Manual focus at 1.3 diopters (~77cm) – calibrated from AF-lock tests.
+# Eliminates AF hunting which caused blurry photos.
 am broadcast -n com.flashphoto/.FlashReceiver -a com.flashphoto.TAKE \
-  -e file "$SHARED_OUT" --ei iso 800 --ei exposure_ms 100 >/dev/null 2>&1
+  -e file "$SHARED_OUT" --ei iso 800 --ei exposure_ms 100 \
+  --ef focus_diopters 1.3 >/dev/null 2>&1
 
-# Wait for capture to complete (camera open + 2s torch + capture + save)
-sleep 12
+# Wait for capture to complete (camera open + 2s torch + skip frames + save)
+sleep 8
 
 # Check if photo was created
 if [ ! -s "$SHARED_OUT" ]; then

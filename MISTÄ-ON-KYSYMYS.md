@@ -28,13 +28,14 @@ Android-puhelimen pieneksi Linux-tietokoneeksi. Termuxin avulla puhelimeen saa
 SSH-etäyhteyden: sitä voi ohjata toiselta tietokoneelta samalla tavalla kuin
 mitä tahansa palvelinta.
 
-Tämän alkutyön teki tekoälyagentti nimeltä Tyko, joka toimi toisella
-kotitietokoneella ja keskusteli ihmisen kanssa
-Telegramin kautta. Agentti tutki viisi eri tapaa ottaa valokuvia Androidilla
-ajastettuna, vertaili niiden etuja ja haittoja, ja suositteli komentorivillä
-toimivaa Termux-ratkaisua. Se kirjoitti käynnistysskriptit, ajasti valokuvauksen
-kolmen tunnin välein ja huolehti, että SSH-yhteys ja ajastin käynnistyvät
-automaattisesti uudelleen, jos puhelin sattuisi käynnistymään uudelleen.
+Tämän alkutyön teki [openclaw-termux](https://github.com/explysm/openclaw-termux)
+-järjestelmässä toiminut tekoälyagentti nimeltä Tyko, joka toimi toisella
+kotitietokoneella ja keskusteli ihmisen kanssa Telegramin kautta. Agentti tutki
+viisi eri tapaa ottaa valokuvia Androidilla ajastettuna, vertaili niiden etuja
+ja haittoja, ja suositteli komentorivillä toimivaa Termux-ratkaisua. Se
+kirjoitti käynnistysskriptit, ajasti valokuvauksen kolmen tunnin välein ja
+huolehti, että SSH-yhteys ja ajastin käynnistyvät automaattisesti uudelleen,
+jos puhelin sattuisi käynnistymään uudelleen.
 
 Kaikki näytti hyvältä – paitsi yksi asia. Kuvat olivat täysin mustia.
 
@@ -67,7 +68,11 @@ kielimallille – tehtävän:
 > *"Tavoitteesi on saada puhelin ottamaan valokuva salamavalon kanssa. Kokeile,
 > tutki, testaa, toista. Älä lopeta ennen kuin olet onnistunut."*
 
-Alkoi intensiivinen ongelmanratkaisupäivä. Tekoäly kokeili kymmentä eri
+Alkoi intensiivinen ongelmanratkaisupäivä. Ihminen ei syöttänyt tekoälylle
+valmiita selostuksia epäonnistumisista, vaan agentti teki kokeet itse:
+kirjoitti skriptejä ja ohjelmia, asensi niitä puhelimeen, ajoi testejä,
+luki virheilmoituksia ja lokitulosteita sekä päätteli niiden perusteella,
+miksi kukin yritys epäonnistui. Tekoäly kokeili kymmentä eri
 lähestymistapaa – joista yhdeksän epäonnistui.
 
 ---
@@ -153,18 +158,24 @@ mittareiden lukemiseen.
 ## Osa 6: Kuka teki työn?
 
 Koko projektin – tutkimuksen, kokeilut, koodin, skriptit, dokumentoinnin ja
-tämän projektikansion – teki tekoäly. Ihmisen rooli oli antaa tavoite, vastata
-muutamaan kysymykseen, kytkeä ja irrottaa USB-kaapeli pyydettäessä ja käynnistää
-SSH-yhteys uudelleen silloin, kun tekoäly ei siihen itse kyennyt.
+tämän projektikansion – teki tekoäly. Tämä tarkoittaa myös sitä, että
+kertomuksen epäonnistumisten syyt eivät tulleet ihmiseltä valmiina syötteinä,
+vaan perustuivat agentin omiin kokeisiin, testiajoihin, virheilmoituksiin,
+lokitulosteisiin ja kuvista mitattuihin tuloksiin. Ihmisen rooli oli antaa
+tehtävä, vastata muutamaan kysymykseen, kytkeä ja irrottaa USB-kaapeli
+pyydettäessä ja käynnistää SSH-yhteys uudelleen silloin, kun tekoäly ei siihen
+itse kyennyt.
 
-Työ jakautui kahteen vaiheeseen kahdella eri tekoälyalustalla:
+Työ jakautui kahteen vaiheeseen kahdella eri tekoälyjärjestelmällä:
 
-**Helmikuu 2026:** OpenClaw-agentti Tyko – tutkimus,
-puhelimen käyttöönotto, ensimmäiset skriptit, dokumentointi. Yhdeksän istuntoa,
-yhteensä 788 API-kutsua.
+**Helmikuu 2026:** gogo-koneella Termux-ympäristössä toiminut
+openclaw-termux-järjestelmä ja sen agenttipersoona Tyko, joka käytti
+Claude Opus 4.5:tä – tutkimus, puhelimen käyttöönotto, ensimmäiset
+skriptit, dokumentointi. Yhdeksän istuntoa, yhteensä 788 API-kutsua.
 
-**Maaliskuu 2026:** Pi-agentti (Claude Opus 4) – salama-ongelman ratkaisu,
-kymmenen epäonnistunutta kokeilua, lopullinen APK-sovellus. Neljä istuntoa,
+**Maaliskuu 2026:** Pi-agentti atom-koneella, pääosin Claude Opus 4.6:lla
+ja osin Claude Sonnet 4.6:lla – salama-ongelman ratkaisu, kymmenen
+epäonnistunutta kokeilua, lopullinen APK-sovellus. Neljä istuntoa,
 yhteensä 607 API-kutsua.
 
 Yhteensä 13 istuntoa, 1 395 API-kutsua ja noin 131 miljoonaa tokenia. Kustannus
