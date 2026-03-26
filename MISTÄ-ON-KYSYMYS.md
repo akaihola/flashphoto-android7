@@ -43,7 +43,7 @@ mustaa. Keskimääräinen kirkkaus jäi noin 0,01 prosenttiin.
 
 ## Tekoälylle annettiin tehtävä
 
-21. maaliskuuta 2026 toiselle tekoälyagentille annettiin yksinkertainen ohje:
+Maaliskuun 21. päivänä 2026 toiselle tekoälyagentille annettiin yksinkertainen ohje:
 puhelimen on opittava ottamaan kuva salamavalon kanssa, eikä työ lopu ennen kuin
 se onnistuu.
 
@@ -148,7 +148,7 @@ noin 1,3 diopterin käsitarkennuksella.
 Kun uusi versio asennettiin puhelimeen ja ajettiin läpi päästä päähän, tulos
 oli edelleen kirkas – noin 24,3 prosenttia – mutta nyt myös selvästi terävämpi.
 Mittaritaulut, putkitekstit ja muut yksityiskohdat erottuivat paremmin.
-Vertailukuvat kopioitiin myös erilliseen `gauge-reader`-projektiin, jossa niitä
+Vertailukuvat kopioitiin myös erilliseen [`gauge-reader`](https://github.com/akaihola/gauge-reader)-projektiin, jossa niitä
 voidaan käyttää myöhemmin konenäön harjoitteluun.
 
 Projektin onnistumispiste siirtyi samalla. Ensin tavoite oli saada puhelin
@@ -174,8 +174,8 @@ Tyko rakensivat perustan: tutkimuksen, Termux-ympäristön, etäyhteydet,
 ajastuksen ja ensimmäiset skriptit. Näihin kului yhdeksän istuntoa ja yhteensä
 788 API-kutsua.
 
-Maaliskuussa 2026 Pi-agentti atom-koneella jatkoi työtä. Se ratkaisi
-salamaongelman, rakensi lopullisen sovelluksen, viritti valotuksen,
+Maaliskuussa 2026 [Pi](https://pi.dev/)-agentti atom-koneella jatkoi työtä.
+Se ratkaisi salamaongelman, rakensi lopullisen sovelluksen, viritti valotuksen,
 paransi käyttövarmuutta, korjasi tarkennuksen ja viimeisteli dokumentaation.
 Näihin kului seitsemän istuntoa ja yhteensä 1 034 API-kutsua.
 
