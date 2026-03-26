@@ -1,8 +1,8 @@
 # Kuinka tekoäly opetti vanhan puhelimen kuvaamaan pimeässä
 
-Android|Espoolaiskodin teknisessä tilassa vanhan Honor-puhelimen pitäisi lukea
+**Espoolaiskodin teknisessä tilassa vanhan Honor-puhelimen pitäisi lukea
 maailmaa silloin, kun kukaan ei katso. Ensin sen piti vain oppia sytyttämään
-salamavalo.
+salamavalo.**
 
 Vanhalla Honor 5C -puhelimella on uusi tehtävä Espoolaiskodin teknisessä
 tilassa. Sen pitäisi ottaa kuvia kylmän ja lämpimän veden mittareista,
