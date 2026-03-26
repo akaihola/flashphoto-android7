@@ -1,246 +1,203 @@
 # Kuinka tekoäly oppi sytyttämään salamavalon
 
-*Kuuden viikon tarina vanhasta puhelimesta, pimeästä huoneesta ja tekoälystä,
-joka ei suostunut luovuttamaan.*
+Vanha Honor 5C päätyi Espoolaiskodin tekniseen tilaan vartioimaan mittareita.
+Huoneessa on pimeää. Siellä ovat kylmän ja lämpimän veden mittarit,
+lämmityspiirin painemittari ja lämpömittari, mutta valoa ei juuri koskaan.
+Jos mittarien lukemat haluttaisiin talteen automaattisesti, puhelimen pitäisi
+osata ottaa kuvia yksin, yöllä ja ilman että kukaan käy painamassa mitään.
 
----
+Ajatus kuulosti helpolta. Käytännössä siitä tuli kuuden viikon mittainen
+selvitystyö Androidin kamerarajapinnasta, Huawein omista erikoisuuksista ja
+siitä, mitä vanhalla puhelimella voi tehdä ilman ruutua, ilman USB-kaapelia ja
+ilman ihmisen apua.
 
-## Lähtökohta
+## Puhelimesta palvelin
 
-Espoolaiskodin teknisessä tilassa – siinä huoneessa, jossa vesimittarit,
-kaukolämpömittari ja lämmityspiirin painemittarit sijaitsevat – on pimeää.
-Täysin pimeää. Valoa ei ole, koska kukaan ei käy siellä päivittäin.
+Alkuasetelma oli arkinen. Kaapista löytyi Honor 5C, vuoden 2016 Android-puhelin,
+jossa on 13 megapikselin kamera ja LED-salama. Puhelin kytkettiin laturiin,
+yhdistettiin kotiverkkoon ja siihen asennettiin Termux, jonka avulla siitä
+tehtiin pieni etähallittava Linux-kone. Puhelimeen sai SSH-yhteyden, joten sitä
+pystyttiin ohjaamaan toiselta tietokoneelta kuten mitä tahansa palvelinta.
 
-Mutta entä jos mittareiden lukemat haluttaisiin tallentaa automaattisesti?
-Entä jos vanha, käyttämätön puhelin voisi ottaa valokuvia mittareista muutaman
-tunnin välein – salamavalon kanssa – ja lähettää ne eteenpäin analysoitaviksi?
+Tämän vaiheen teki [openclaw-termux](https://github.com/explysm/openclaw-termux)
+-järjestelmässä toiminut agentti Tyko. Se tutki useita tapoja ajastaa
+valokuvaus Androidilla, valitsi Termux-pohjaisen ratkaisun, kirjoitti
+käynnistysskriptit ja rakensi ajastuksen, joka otti kuvan kolmen tunnin välein.
+Puhelin heräsi, ajoi tehtävänsä ja pysyi etäyhteyden päässä.
 
-Idea kuulostaa yksinkertaiselta. Se ei ollut sitä.
+Melkein kaikki toimi heti.
 
----
+Paitsi että kuvat olivat mustia.
 
-## Osa 1: Vanha puhelin saa uuden tehtävän
+## Miksi salama ei syttynyt
 
-Kaapista löytyi Honor 5C – vuoden 2016 Android-puhelin, jossa on 13 megapikselin
-kamera ja LED-salama. Puhelin liitettiin laturiin, yhdistettiin kodin
-Wi-Fi-verkkoon ja siihen asennettiin Termux – sovellus, joka muuttaa
-Android-puhelimen pieneksi Linux-tietokoneeksi. Termuxin avulla puhelimeen saa
-SSH-etäyhteyden: sitä voi ohjata toiselta tietokoneelta samalla tavalla kuin
-mitä tahansa palvelinta.
+Android-puhelimessa kamera ja LED-salamavalo käyttävät samaa laitteistoa. Kun
+kamera avataan kuvan ottamista varten, se ottaa salamavalon hallintaansa. Jos
+valo on jo päällä, kamera sammuttaa sen ja ottaa kuvan vasta sitten.
+Komentorivityökaluilla tätä ei saa koordinoitua samalla tavalla kuin puhelimen
+omassa kamerasovelluksessa.
 
-Tämän alkutyön teki [openclaw-termux](https://github.com/explysm/openclaw-termux)
--järjestelmässä toiminut tekoälyagentti nimeltä Tyko, joka toimi toisella
-kotitietokoneella ja keskusteli ihmisen kanssa Telegramin kautta. Agentti tutki
-viisi eri tapaa ottaa valokuvia Androidilla ajastettuna, vertaili niiden etuja
-ja haittoja, ja suositteli komentorivillä toimivaa Termux-ratkaisua. Se
-kirjoitti käynnistysskriptit, ajasti valokuvauksen kolmen tunnin välein ja
-huolehti, että SSH-yhteys ja ajastin käynnistyvät automaattisesti uudelleen,
-jos puhelin sattuisi käynnistymään uudelleen.
+Siksi puhelin teki kuusi viikkoa työnsä moitteettomasti ja silti turhaan.
+Ajastus toimi, SSH toimi, cron toimi, mutta kuvat olivat käytännössä pelkkää
+mustaa. Keskimääräinen kirkkaus jäi noin 0,01 prosenttiin.
 
-Kaikki näytti hyvältä – paitsi yksi asia. Kuvat olivat täysin mustia.
+## Tekoälylle annettiin tehtävä
 
----
+21. maaliskuuta 2026 toiselle tekoälyagentille annettiin yksinkertainen ohje:
+puhelimen on opittava ottamaan kuva salamavalon kanssa, eikä työ lopu ennen kuin
+se onnistuu.
 
-## Osa 2: Miksi salama ei syttynyt
+Oleellista on, ettei ihminen syöttänyt agentille valmiita selityksiä siitä,
+miksi aiemmat yritykset olivat epäonnistuneet. Agentti teki kokeet itse,
+kirjoitti skriptejä ja Java-ohjelmia, asensi niitä puhelimeen, ajoi testejä,
+luki lokit ja virheilmoitukset sekä vertasi kuvien kirkkautta. Kun jokin ei
+onnistunut, se joutui itse päättelemään miksi.
 
-Android-puhelimen kamera ja LED-salamavalo jakavat saman laitteiston. Kun
-kamerasovellus avaa kameran ottaakseen kuvan, se ottaa salamavalon yksinoikeudella
-haltuunsa. Jos salamavalo on päällä valokuvaa otettaessa, kamera sammuttaa sen
-ensin – ja ottaa sitten kuvan pimeässä.
+Ensimmäisen päivän aikana kokeiltiin kymmentä eri lähestymistapaa.
 
-Tämä on suunnittelupäätös, ei virhe. Android-käyttöjärjestelmä toimii näin
-tarkoituksella, koska kamera ja salamavalo eivät voi toimia samanaikaisesti
-ilman erityistä koordinaatiota. Normaali kamerasovellus hoitaa tämän
-koordinaation sisäisesti: se sytyttää salamavalon juuri oikealla hetkellä
-valotuksen aikana. Mutta komentorivillä toimiva Termux-työkalu ei tätä osaa.
+## Kymmenen yritystä
 
-Kuusi viikkoa puhelin otti tunnollisesti kuvan joka kolmas tunti. Kuusi viikkoa
-kaikki kuvat olivat käytännössä mustia – keskimääräinen kirkkaus 0,01 prosenttia.
-Hädin tuskin mitään.
+Ensimmäinen yritys oli suorin mahdollinen: salamavalo päälle, kuva talteen,
+salamavalo pois. Kamera sammutti valon ennen kuvaa. Tulos oli musta.
 
----
+Toisessa yrityksessä tehtiin oma Java-ohjelma, jonka piti käyttää Androidin
+kamerarajapintaa suoraan. Android tappoi ohjelman, koska sitä ei ollut
+asennettu oikeaksi sovellukseksi.
 
-## Osa 3: Tekoäly saa tehtävän
+Kolmannessa yrityksessä Java-ohjelma käynnistettiin toisella tavalla. Sekin
+kaatui, koska tarvittavat kirjastot eivät olleet käytettävissä siinä
+ympäristössä.
 
-21\. maaliskuuta 2026 ihminen antoi toiselle tekoälyagentille – Claude-nimiselle
-kielimallille – tehtävän:
+Neljännessä yrityksessä yritettiin muokata suoraan Termuxin sovellusta.
+Androidin allekirjoitusmalli esti sen.
 
-> *"Tavoitteesi on saada puhelin ottamaan valokuva salamavalon kanssa. Kokeile,
-> tutki, testaa, toista. Älä lopeta ennen kuin olet onnistunut."*
+Viidennessä yrityksessä oma sovellus yritettiin rakentaa puhelimessa. Puhelimen
+rakennustyökalut eivät sopineet yhteen sen oman järjestelmän kanssa.
 
-Alkoi intensiivinen ongelmanratkaisupäivä. Ihminen ei syöttänyt tekoälylle
-valmiita selostuksia epäonnistumisista, vaan agentti teki kokeet itse:
-kirjoitti skriptejä ja ohjelmia, asensi niitä puhelimeen, ajoi testejä,
-luki virheilmoituksia ja lokitulosteita sekä päätteli niiden perusteella,
-miksi kukin yritys epäonnistui. Tekoäly kokeili kymmentä eri
-lähestymistapaa – joista yhdeksän epäonnistui.
+Kuudennessa yrityksessä huomattiin jotakin tärkeää. Huawein oma kamerasovellus
+osasi kyllä sytyttää salaman. Jos sovelluksen avasi ja laukaisinta painoi
+keinotekoisesti ADB:n kautta, kuva onnistui. Tämä oli ensimmäinen oikea
+läpimurto – mutta se vaati USB-kaapelin.
 
----
+Seitsemännessä yrityksessä puhelin yhdistettiin ADB:llä itseensä. Ratkaisu oli
+kekseliäs ja toimi hetken, mutta Huawei sammutti ADB-palvelun heti, kun
+USB-kaapeli irrotettiin.
 
-## Osa 4: Kymmenen yritystä
+Kahdeksannessa yrityksessä rakennettiin oma APK tietokoneella, koska puhelin ei
+pystynyt rakentamaan sitä itse. Sovellus pyysi Androidia käyttämään tavallista
+salamatilaa. Järjestelmä väitti kaiken onnistuneen, mutta kuva jäi pimeäksi.
+Huawein kameran laiteajuri ilmoitti salamavalon lauennen, vaikka se ei ollut
+lauennut.
 
-**Yritys 1: Salamavalo päälle, kuva, salamavalo pois.** Kamera sammutti
-salamavalon. Musta kuva.
+Yhdeksännessä yrityksessä vaihdettiin lähestymistapaa. Androidissa LED-valoa voi
+käyttää sekä salamavalona että jatkuvana taskulamppuvalona. Huawein ohjelmisto
+sivuutti salamamoodin, mutta jatkuva valo toimi. Kun valo pidettiin päällä
+jatkuvasti kuvauksen aikana, kuvasta tuli kirkas.
 
-**Yritys 2: Oma Java-ohjelma, joka käskee kameraa käyttämään salamaa.** Android
-tappoi ohjelman välittömästi, koska se ei ollut virallisesti asennettu
-sovellus.
+Kymmenes yritys ratkaisi vielä viimeisen esteen. Kun puhelimen näyttö on
+sammutettuna, tavallinen kameran esikatselupinta ei toimi, koska se tarvitsee
+näytönohjaimen. Ratkaisu oli ohittaa esikatselu kokonaan ja tallentaa kuva
+suoraan `ImageReader`-rajapinnan kautta.
 
-**Yritys 3: Java-ohjelma toisella käynnistystavalla.** Epäonnistui
-toisella tavalla – tarvittavat kirjastot eivät olleet käytettävissä.
+Tästä syntyi ensimmäinen toimiva versio: puhelin otti yksin kuvan pimeässä
+huoneessa ilman USB-kaapelia ja ilman että kenenkään piti herättää näyttöä.
 
-**Yritys 4: Termux-sovelluksen muokkaaminen suoraan.** Ei onnistunut, koska
-Androidin tietoturva vaatii, että sovellukset on allekirjoitettu samalla
-avaimella, eikä alkuperäistä avainta ollut käytettävissä.
+## Ratkaisu oli pieni sovellus
 
-**Yritys 5: Oman sovelluksen rakentaminen puhelimessa.** Puhelimen
-kehitystyökalut eivät olleet yhteensopivia puhelimen oman käyttöjärjestelmän
-kanssa.
+Lopullinen ohjelma on hyvin pieni, vain muutamien kymmenien kilotavujen APK.
+Kun Termux lähettää sille broadcast-viestin, sovellus avaa kameran, sytyttää
+LED-valon jatkuvaan tilaan, odottaa hetken ja tallentaa kuvan. Näin puhelin voi
+ottaa kuvan täysin itsenäisesti cron-ajastuksen käynnistämänä.
 
-**Yritys 6: Kamerasovelluksen käyttöliittymän simulointi.** Tekoäly huomasi, että
-Huawein oma kamerasovellus osaa sytyttää salaman. Entä jos kamerasovellus
-käynnistettäisiin ohjelmallisesti ja "painettaisiin" laukaisinnappia
-simuloimalla kosketusta näytöllä? Se toimi! Kuva oli kirkas, salama syttyi.
+Ilman valoa kuvan kirkkaus oli noin 0,01 prosenttia. Toimivalla ratkaisulla se
+nousi ensin tasolle, jolla mittarit ylipäätään näkyivät.
 
-Mutta tämä vaati USB-kaapelin. Kosketuksen simulointi edellytti niin sanottua
-ADB-yhteyttä, joka toimii vain USB-kaapelin kautta. Ja Honor-puhelimen
-Huawei-käyttöjärjestelmä katkaisee ADB-yhteyden välittömästi, kun USB-kaapeli
-irrotetaan – toisin kuin tavallinen Android.
+Mutta tarina ei loppunut siihen.
 
-**Yritys 7: Puhelin yhdistää ADB:n itseensä.** Tekoäly keksi, että puhelin voi
-asentaa oman ADB-työkalun ja yhdistää sillä itseensä – puhelin ohjaa itseään.
-Nerokas ratkaisu, joka toimi. Mutta vaati silti USB-kaapelin, koska Huawei
-sammuttaa ADB-palvelun kaapelin irrotessa.
+## Työ jatkui onnistumisen jälkeen
 
-**Yritys 8: Oma sovellus, rakennettu tietokoneella.** Koska puhelimessa
-rakentaminen ei onnistunut, tekoäly rakensi sovelluksen tietokoneella
-käyttäen viittä eri työkalua ja siirsi valmiin sovelluksen puhelimeen.
-Sovellus käytti Androidin virallista kamerarajapintaa ja pyysi kameraa
-sytyttämään salaman.
+Kun ensimmäinen toimiva ratkaisu oli saatu valmiiksi, alkoi seuraava vaihe:
+siitä piti tehdä oikeasti käyttökelpoinen.
 
-Kamera vastasi: "Salama syttyi." Mutta kuva oli pimeä. Puhelimen
-laitteisto-ohjain – Huawein oma ohjelmistokerros, joka ohjaa fyysistä
-kameralaitteistoa – *valehteli*. Se ilmoitti salamavalon syttyneen, vaikka
-ei ollut oikeasti sytyttänyt sitä.
+Ensimmäinen jatko-ongelma oli valotus. Vaikka salama tai oikeammin jatkuvana
+pidetty LED-valo jo toimi, todellisessa teknisessä tilassa automaattivalotus
+teki kuvista liian tummia. Huone oli iso ja muuten pimeä, joten kameran
+algoritmi alivalotti. Agentti lisäsi sovellukseen käsin säädettävän ISO-arvon
+ja valotusajan, kokeili useita yhdistelmiä ja päätyi asetukseen ISO 800 ja
+100 millisekuntia. Tällä kirkkaus nousi noin 24 prosenttiin. Kuvista tuli
+sellaisia, että mittareita pystyi oikeasti lukemaan.
 
-**Yritys 9: Taskulamppuvalo kamerasession aikana.** Androidissa on kaksi tapaa
-käyttää LED-valoa: salamavalona (yksi välähdys kuvan aikana) ja taskulamppuna
-(jatkuva valo). Huawein ohjelmisto ohitti salamamoodin, mutta
-taskulamppumoodi toimi – koska se käyttää eri koodireittiä laitteiston
-ohjauksessa. Tekoäly pyysi kameraa pitämään LED-valon päällä jatkuvasti kuvan
-ottamisen ajan. **Kuva oli kirkas.**
+Toinen jatko-ongelma oli käyttövarmuus. Huawein EMUI-järjestelmässä oli
+virransäästökomponentteja, jotka tappoivat välillä Termuxin cron-ajon ja
+SSH-palvelimen taustalta. Agentti poisti ADB:n kautta käytöstä paketit
+`com.huawei.powergenie` ja `com.huawei.android.hwaps`, jotta puhelin ei itse
+sabotoisi omaa automaatiotaan.
 
-**Yritys 10: Toiminta ilman näyttöä.** Viimeinen este. Kun puhelimen näyttö on
-pimeänä (kuten se on 99,9 % ajasta valvontakäytössä), kameran
-esikatselukuva vaatii näytönohjaimen – joka on sammuksissa. Sovellus kaatui.
-Ratkaisu: ohittaa esikatselukuva kokonaan ja ohjata kameran data suoraan
-kuvatiedostoon.
+Kolmas jatko-ongelma oli tarkennus. Kun kuvia alkoi tulla säännöllisesti,
+havaittiin, että osa niistä oli selvästi pehmeitä. Syy ei ollut valossa vaan
+siinä, että sovellus tallensi ensimmäisen sopivan näköisen ruudun odottamatta,
+että automaattitarkennus olisi varmasti lukittunut.
 
----
+Tähän tehtiin uusi korjauskierros. Sovellukseen lisättiin eksplisiittinen
+AF-lukitus ennen tallennusta, mahdollisuus kiinteään käsitarkennukseen sekä
+lokitus, joka kertoi jokaisesta ruudusta tarkennustilan, linssin liikkeen ja
+etäisyyden. Testien perusteella automaattitarkennus osui usein noin 1,13
+diopteriin, mutta juuri kyseisessä asennuksessa kaikkein terävin tulos saatiin
+noin 1,3 diopterin käsitarkennuksella.
 
-## Osa 5: Ratkaisu
+Kun uusi versio asennettiin puhelimeen ja ajettiin läpi päästä päähän, tulos
+oli edelleen kirkas – noin 24,3 prosenttia – mutta nyt myös selvästi terävämpi.
+Mittaritaulut, putkitekstit ja muut yksityiskohdat erottuivat paremmin.
+Vertailukuvat kopioitiin myös erilliseen `gauge-reader`-projektiin, jossa niitä
+voidaan käyttää myöhemmin konenäön harjoitteluun.
 
-Lopullinen sovellus on pieni – noin 16 kilotavua, pienempi kuin tämä teksti.
-Se tekee yhden asian: kun Termux lähettää sille viestin, se avaa kameran,
-sytyttää LED-valon taskulamppumoodissa, odottaa kaksi sekuntia valon ja
-kameran tasapainottumista, ottaa kuvan ja tallentaa sen.
+Projektin onnistumispiste siirtyi samalla. Ensin tavoite oli saada puhelin
+välähtämään. Sen jälkeen tavoite oli saada puhelin tuottamaan automaattisesti
+kuvia, joista mittareita voi oikeasti lukea.
 
-Puhelimeen ei tarvita USB-kaapelia, näyttöä ei tarvitse herättää, kenenkään ei
-tarvitse koskea puhelimeen. Kolmen tunnin välein puhelimen oma ajastin
-käynnistää sovelluksen, ja puhelin ottaa kuvan.
+## Kuka työn teki
 
-Tulokset ovat selkeitä. Ilman salamaa kuvan keskimääräinen kirkkaus on 0,01 % –
-käytännössä musta. Salamavaloratkaisulla kirkkaus on noin 24 % – riittävä
-mittareiden lukemiseen.
+Koko työn – tutkimuksen, kokeilut, skriptit, Java-koodin, APK:n,
+dokumentaation ja testauksen – teki tekoäly. Tämä koskee myös epäonnistumisten
+selityksiä. Niitä ei kirjoitettu agentille valmiiksi, vaan ne perustuivat sen
+omiin kokeisiin, virheilokeihin, testiajoihin ja kuvista mitattuihin tuloksiin.
 
----
+Ihmisen rooli oli käytännöllinen. Hän antoi tavoitteen, vastasi joihinkin
+kysymyksiin, kytki välillä USB-kaapelin, hyväksyi tarvittavia oikeuksia
+puhelimen ruudulla ja käynnisti SSH-yhteyden uudelleen silloin kun agentti ei
+voinut tehdä sitä itse.
 
-## Osa 6: Kuka teki työn?
+Työ jakautui kahteen päävaiheeseen.
 
-Koko projektin – tutkimuksen, kokeilut, koodin, skriptit, dokumentoinnin ja
-tämän projektikansion – teki tekoäly. Tämä tarkoittaa myös sitä, että
-kertomuksen epäonnistumisten syyt eivät tulleet ihmiseltä valmiina syötteinä,
-vaan perustuivat agentin omiin kokeisiin, testiajoihin, virheilmoituksiin,
-lokitulosteisiin ja kuvista mitattuihin tuloksiin. Ihmisen rooli oli antaa
-tehtävä, vastata muutamaan kysymykseen, kytkeä ja irrottaa USB-kaapeli
-pyydettäessä ja käynnistää SSH-yhteys uudelleen silloin, kun tekoäly ei siihen
-itse kyennyt.
+Helmikuussa 2026 gogo-koneella toiminut openclaw-termux ja sen agenttipersoona
+Tyko rakensivat perustan: tutkimuksen, Termux-ympäristön, etäyhteydet,
+ajastuksen ja ensimmäiset skriptit. Näihin kului yhdeksän istuntoa ja yhteensä
+788 API-kutsua.
 
-Työ jakautui kahteen vaiheeseen kahdella eri tekoälyjärjestelmällä:
+Maaliskuussa 2026 Pi-agentti atom-koneella jatkoi työtä. Se ratkaisi
+salamaongelman, rakensi lopullisen sovelluksen, viritti valotuksen,
+paransi käyttövarmuutta, korjasi tarkennuksen ja viimeisteli dokumentaation.
+Näihin kului seitsemän istuntoa ja yhteensä 1 034 API-kutsua.
 
-**Helmikuu 2026:** gogo-koneella Termux-ympäristössä toiminut
-openclaw-termux-järjestelmä ja sen agenttipersoona Tyko, joka käytti
-Claude Opus 4.5:tä – tutkimus, puhelimen käyttöönotto, ensimmäiset
-skriptit, dokumentointi. Yhdeksän istuntoa, yhteensä 788 API-kutsua.
+Yhteensä projektiin käytettiin 16 istuntoa, 1 822 API-kutsua ja noin
+174 miljoonaa tokenia. Anthropicin hinnaston mukaan kustannus oli noin
+165 dollaria eli suunnilleen 150 euroa.
 
-**Maaliskuu 2026:** Pi-agentti atom-koneella, pääosin Claude Opus 4.6:lla
-ja osin Claude Sonnet 4.6:lla – salama-ongelman ratkaisu, kymmenen
-epäonnistunutta kokeilua, lopullinen APK-sovellus. Neljä istuntoa,
-yhteensä 607 API-kutsua.
+## Mitä seuraavaksi
 
-Yhteensä 16 istuntoa, 1 822 API-kutsua ja noin 174 miljoonaa tokenia. Kustannus
-Anthropicin API-hinnaston mukaan: noin 165 dollaria eli noin 150 euroa.
+Seuraava vaihe on opettaa kone lukemaan mittareita kuvista.
 
----
+Kuvissa näkyvät ainakin kylmän veden mittari, lämpimän veden mittari,
+lämmityspiirin painemittari ja lämpömittari. Ajatus on rakentaa näille useita
+kilpailevia konenäköratkaisuja, vertailla niitä keskenään ja säilyttää lopulta
+vain toimivin lähestymistapa.
 
-## Osa 7: Entä sitten?
+Tavoitteena ei siis ole enää pelkkä kuvaaminen. Tavoitteena on saada talon
+vedenkulutuksesta ja lämmitysjärjestelmän tilasta automaattisesti luettavaa
+historiatietoa – ja ehkä myöhemmin myös hälytyksiä poikkeamista.
 
-Tarinan alkuperäinen "onnistumispiste" ei jäänyt lopulta projektin loppuun.
-Salaman sytyttäminen oli vasta ensimmäinen tuotantokelpoinen välitavoite.
-Seuraavina päivinä tekoäly jatkoi vielä kolmea tärkeää jatkotyötä.
+Vanha puhelin ei ollut romua. Se oli laite, jolle piti vain löytää tehtävä.
+Ja sen jälkeen piti vielä löytää tekoäly, joka ei luovuttanut silloinkaan,
+kun yhdeksän ensimmäistä yritystä epäonnistuivat.
 
-**Ensimmäinen jatkovaihe oli tuotantokäyttöön virittäminen.** Kun puhelin oli
-saatu ottamaan kuvia ilman USB-kaapelia, kävi ilmi, että todellisessa
-teknisessä tilassa automaattivalotus alivalotti kuvat. Huone oli liian pimeä
-ja liian suuri siihen, että kameran automatiikka olisi ymmärtänyt LED-valon
-merkityksen oikein. Tekoäly lisäsi sovellukseen käsisäädettävän ISO-herkkyyden
-ja valotusajan, testasi eri yhdistelmiä paikan päällä ja päätyi asetukseen
-ISO 800 + 100 millisekuntia. Tällä kirkkaus nousi noin 24 prosenttiin, ja
-mittarit tulivat kunnolla luettaviksi.
-
-**Toinen jatkovaihe oli käyttövarmuuden parantaminen.** Huawein EMUI-järjestelmä
-sisältää taustalla toimivia virransäästökomponentteja, jotka tappoivat välillä
-Termuxin cron-ajon ja SSH-palvelimen. Tekoäly poisti ADB:n kautta käytöstä
-paketit `com.huawei.powergenie` ja `com.huawei.android.hwaps`, jotta ajastus ja
-etäyhteys pysyisivät hengissä ilman ihmisen väliintuloa.
-
-**Kolmas jatkovaihe oli tarkennusongelman ratkaisu.** Kun kuvia alkoi tulla
-säännöllisesti, osa niistä osoittautui epätarkoiksi. Syyksi paljastui se, että
-sovellus tallensi taskulamppuvalossa jonkin sopivalta näyttävän esikatseluruudun
-odottamatta, että automaattitarkennus olisi todella lukittunut. Tekoäly lisäsi
-sovellukseen kolme uutta ominaisuutta: eksplisiittisen automaattitarkennuksen
-lukituksen ennen tallennusta, mahdollisuuden käyttää kiinteää käsitarkennusta
-sekä diagnostiikkalokit tarkennusetäisyydestä ja linssin liikkeestä.
-
-Seuraavana päivänä uusi versio asennettiin puhelimeen, testattiin ADB-lokien
-avulla ja kalibroitiin lopulta noin 1,3 diopterin käsitarkennukseen juuri siinä
-asennossa, jossa puhelin kuvaa mittareita. Lopputuloksena oli edelleen noin
-24 prosentin kirkkaus, mutta nyt myös selvästi terävämmät mittaritaulut,
-putkitekstit ja muut yksityiskohdat. Vertailukuvat kopioitiin myös erilliseen
-`gauge-reader`-projektiin myöhempiä konenäkökokeiluja varten. Käytännössä
-projekti siirtyi vaiheesta "puhelin osaa välähtää" vaiheeseen "puhelin tuottaa
-automaattisesti kuvia, joista mittareita voi oikeasti lukea ja joita voi
-käyttää konenäön opetukseen".
-
----
-
-## Osa 8: Mitä seuraavaksi?
-
-Nyt kun puhelin osaa ottaa valaistuja kuvia pimeässä huoneessa, seuraava askel
-on opettaa tekoälyä lukemaan mittareita kuvista:
-
-- **Kylmän veden mittari** – kuutiometrejä, juoksevat numerot
-- **Lämpimän veden mittari** – samoin
-- **Patterilämmityksen painemittari** – bareja, analoginen viisari
-- **Patterilämmityksen lämpötilamittari** – celsiusasteita, analoginen viisari
-
-Tavoitteena on seurata vedenkulutusta ja lämmitysjärjestelmän tilaa automaattisesti sekä hälyttää
-poikkeavuuksista – esimerkiksi äkillisestä vedenkulutuksen kasvusta (vuoto?) tai
-lämmityspaineen laskusta (ilmaa järjestelmässä?).
-
-Vanha puhelin laatikossa ei ollut arvoton. Se vain tarvitsi tehtävän – ja
-tekoälyn, joka ei luovuttanut yhdeksän epäonnistumisen jälkeen.
-
----
-
-*Tämä teksti on tekoälyn kirjoittama.*
+*Teksti on tekoälyn kirjoittama.*
