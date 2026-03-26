@@ -482,11 +482,14 @@ value for subsequent shots.
 
 ## Future work
 
-### Immediate
+### Camera pipeline status
 
+- [x] Flash-illuminated autonomous capture from Termux via broadcast-triggered APK
+- [x] Production exposure tuning for the dark mechanical room (`ISO 800`, `100 ms`)
+- [x] Focus reliability improvements via AF lock, manual focus override, and diagnostics
+- [x] Disable Huawei background killers (`com.huawei.powergenie`, `com.huawei.android.hwaps`)
 - [ ] Set up photo retrieval pipeline (SCP/rsync from phone to server)
-- [ ] Address PowerGenie killing Termux services (uninstall via ADB or
-  mark Termux as protected in EMUI battery settings)
+- [ ] Verify over a longer unattended run that cron, Dropbear, and the camera app stay stable
 
 ### Gauge reading (next phase)
 
