@@ -178,12 +178,53 @@ ja osin Claude Sonnet 4.6:lla – salama-ongelman ratkaisu, kymmenen
 epäonnistunutta kokeilua, lopullinen APK-sovellus. Neljä istuntoa,
 yhteensä 607 API-kutsua.
 
-Yhteensä 13 istuntoa, 1 395 API-kutsua ja noin 131 miljoonaa tokenia. Kustannus
-Anthropicin API-hinnaston mukaan: noin 110 dollaria eli reilut 100 euroa.
+Yhteensä 16 istuntoa, 1 822 API-kutsua ja noin 174 miljoonaa tokenia. Kustannus
+Anthropicin API-hinnaston mukaan: noin 165 dollaria eli noin 150 euroa.
 
 ---
 
-## Osa 7: Mitä seuraavaksi?
+## Osa 7: Entä sitten?
+
+Tarinan alkuperäinen "onnistumispiste" ei jäänyt lopulta projektin loppuun.
+Salaman sytyttäminen oli vasta ensimmäinen tuotantokelpoinen välitavoite.
+Seuraavina päivinä tekoäly jatkoi vielä kolmea tärkeää jatkotyötä.
+
+**Ensimmäinen jatkovaihe oli tuotantokäyttöön virittäminen.** Kun puhelin oli
+saatu ottamaan kuvia ilman USB-kaapelia, kävi ilmi, että todellisessa
+teknisessä tilassa automaattivalotus alivalotti kuvat. Huone oli liian pimeä
+ja liian suuri siihen, että kameran automatiikka olisi ymmärtänyt LED-valon
+merkityksen oikein. Tekoäly lisäsi sovellukseen käsisäädettävän ISO-herkkyyden
+ja valotusajan, testasi eri yhdistelmiä paikan päällä ja päätyi asetukseen
+ISO 800 + 100 millisekuntia. Tällä kirkkaus nousi noin 24 prosenttiin, ja
+mittarit tulivat kunnolla luettaviksi.
+
+**Toinen jatkovaihe oli käyttövarmuuden parantaminen.** Huawein EMUI-järjestelmä
+sisältää taustalla toimivia virransäästökomponentteja, jotka tappoivat välillä
+Termuxin cron-ajon ja SSH-palvelimen. Tekoäly poisti ADB:n kautta käytöstä
+paketit `com.huawei.powergenie` ja `com.huawei.android.hwaps`, jotta ajastus ja
+etäyhteys pysyisivät hengissä ilman ihmisen väliintuloa.
+
+**Kolmas jatkovaihe oli tarkennusongelman ratkaisu.** Kun kuvia alkoi tulla
+säännöllisesti, osa niistä osoittautui epätarkoiksi. Syyksi paljastui se, että
+sovellus tallensi taskulamppuvalossa jonkin sopivalta näyttävän esikatseluruudun
+odottamatta, että automaattitarkennus olisi todella lukittunut. Tekoäly lisäsi
+sovellukseen kolme uutta ominaisuutta: eksplisiittisen automaattitarkennuksen
+lukituksen ennen tallennusta, mahdollisuuden käyttää kiinteää käsitarkennusta
+sekä diagnostiikkalokit tarkennusetäisyydestä ja linssin liikkeestä.
+
+Seuraavana päivänä uusi versio asennettiin puhelimeen, testattiin ADB-lokien
+avulla ja kalibroitiin lopulta noin 1,3 diopterin käsitarkennukseen juuri siinä
+asennossa, jossa puhelin kuvaa mittareita. Lopputuloksena oli edelleen noin
+24 prosentin kirkkaus, mutta nyt myös selvästi terävämmät mittaritaulut,
+putkitekstit ja muut yksityiskohdat. Vertailukuvat kopioitiin myös erilliseen
+`gauge-reader`-projektiin myöhempiä konenäkökokeiluja varten. Käytännössä
+projekti siirtyi vaiheesta "puhelin osaa välähtää" vaiheeseen "puhelin tuottaa
+automaattisesti kuvia, joista mittareita voi oikeasti lukea ja joita voi
+käyttää konenäön opetukseen".
+
+---
+
+## Osa 8: Mitä seuraavaksi?
 
 Nyt kun puhelin osaa ottaa valaistuja kuvia pimeässä huoneessa, seuraava askel
 on opettaa tekoälyä lukemaan mittareita kuvista:

@@ -24,8 +24,8 @@ starting SSH when asked. The failed attempts described here were not
 hand-written inputs from the human – they came from the agents' own
 experiments, logs, errors, and image measurements. Every line of code, every
 failed experiment, every workaround discovery, and this README were produced by
-agents across **13+ sessions totalling 1,395+ API turns and ~131M+ tokens
-($110+ at API pricing)**. See [Agent session cost](#agent-session-cost) for the
+agents across **16+ sessions totalling 1,822+ API turns and ~174M+ tokens
+($165+ at API pricing)**. See [Agent session cost](#agent-session-cost) for the
 full breakdown.
 
 [claude-code]: https://claude.ai/code
@@ -206,6 +206,53 @@ on both battery and AC power. See [EXPERIMENTS.md] for detailed timing results.
 
 Final result: **12–16% brightness with screen off, fully autonomous**, triggered
 by `am broadcast` from a Termux cron job.
+
+#### Session 5: Production tuning and documentation (March 22–23, 2026)
+
+After the preview-frame breakthrough, several shorter Pi sessions refined the
+system for real use in the mechanical room:
+
+- Replaced the painfully slow ImageMagick brightness measurement with Pillow on
+  the phone
+- Tested the phone on AC power in the actual installation room
+- Added manual exposure controls (`iso`, `exposure_ms`) to compensate for the
+  auto-exposure algorithm underexposing a mostly dark scene
+- Settled on **ISO 800 + 100 ms** as the production default, raising measured
+  brightness to **24%** and making the gauges clearly readable
+- Updated the wrapper script, experiments log, README, and the Finnish
+  narrative document to reflect the production setup
+- Disabled Huawei's background killers (`com.huawei.powergenie` and
+  `com.huawei.android.hwaps`) over ADB so they would stop killing cron and
+  Dropbear
+
+At this point the project had crossed the line from "flash works" to "usable
+production photos arrive automatically".
+
+#### Session 6: Focus fix and deployment (March 25–26, 2026)
+
+Once the camera was producing bright images reliably, a new problem showed up:
+many production photos were soft and slightly out of focus. A Pi session on
+March 25 analyzed the Camera2 flow and identified the root cause: the APK was
+saving whatever TORCH-lit preview frame happened to arrive after warmup, with
+no explicit autofocus confirmation.
+
+The fix added three pieces:
+
+- **AF-lock-before-save** – trigger `AF_TRIGGER_START` after warmup and wait
+  for `FOCUSED_LOCKED` / `NOT_FOCUSED_LOCKED`
+- **Manual focus mode** – allow a calibrated `focus_diopters` override for a
+  fixed-mount installation
+- **Diagnostic focus logging** – record AF state, lens movement, and focus
+  distance for each frame
+
+On March 26 the new APK was deployed and tested on the phone. ADB logcat showed
+AF locking around **1.13 diopters** (~88 cm), while a manually tuned focus
+setting around **1.3 diopters** produced the sharpest result in the actual
+mechanical room. The production Termux wrapper was updated to use the calibrated
+manual focus setting, and an end-to-end test produced a **24.3% brightness**
+image with visibly sharper gauge faces and labels. The comparison shots were
+also copied into the follow-on `gauge-reader` project for machine-vision
+experiments.
 
 [EXPERIMENTS.md]: EXPERIMENTS.md
 
@@ -480,9 +527,11 @@ Sessions stored in `/home/agent/.openclaw/agents/clawd/sessions/`.
 | 5 smaller | ADB tricks, cleanup, migration | 89 | 17,986 | 1.6M + 676K | $2.90 |
 | **Subtotal** | | **788** | **169,835** | **56.5M + 6.7M** | **$59.14** |
 
-### Phase 2: Pi agent on atom (March 21–22, 2026)
+### Phase 2: Pi agent on atom (March 21–26, 2026)
 
-Pi sessions (Claude Opus 4) on atom. Session logs in `~/.pi/agent/sessions/`.
+Pi sessions on atom. Early sessions used mostly Claude Opus 4.6 and partly
+Claude Sonnet 4.6; the later tuning/focus sessions are recorded as Claude Opus
+4.6 in the Pi logs. Session logs in `~/.pi/agent/sessions/`.
 
 | Session | Focus | Turns | Output tokens | Cache (read+write) | Cost |
 |---------|-------|------:|-------------:|-----------:|-----:|
@@ -490,13 +539,19 @@ Pi sessions (Claude Opus 4) on atom. Session logs in `~/.pi/agent/sessions/`.
 | `7138154e` | Brief intermediate | 6 | 1,087 | 120K + 39K | $0.33 |
 | `12acdef4` | Self-loopback ADB, production script | 210 | 60,025 | 20.0M + 254K | $13.11 |
 | `d98b9bef` | FlashPhoto APK, TORCH discovery, cron setup | 178 | 95,561 | 20.6M + 812K | $17.74 |
-| **Subtotal** | | **607** | **236,426** | **65.8M + 1.9M** | **$50.73** |
+| `1df67ec4` | Production tuning, manual exposure docs, PowerGenie removal, gauge-reader seed repo | 290 | 76,678 | 33.7M + 1.6M | $30.37 |
+| `37bfb929` | Clarify and reword Finnish/English project narrative | 40 | 9,030 | ~0 + ~0* | $19.97 |
+| `e132d2bf` | Focus diagnosis, AF lock/manual focus implementation, build, deploy, test | 97 | 32,033 | 6.8M + 169K | $5.27 |
+| **Subtotal** | | **1,034** | **354,167** | **106.2M + 3.7M** | **$106.33** |
+
+\* Pi logged zero cache tokens for `37bfb929`, but the billed total is still
+present in the session usage metadata.
 
 ### Grand total
 
 | | Turns | Output tokens | Cache (read+write) | Cost |
 |---|------:|-------------:|-----------:|-----:|
-| **All 13 sessions** | **1,395** | **406,261** | **122.3M + 8.6M** | **$109.87** |
+| **All 16 sessions** | **1,822** | **524,002** | **162.7M + 10.4M** | **$165.47** |
 
 The high cache-read volume reflects the iterative nature of the work: each API
 turn re-sends the full conversation context (including tool results from SSH
