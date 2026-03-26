@@ -1,11 +1,13 @@
-# Kuinka tekoäly oppi sytyttämään salamavalon
+# Kuinka tekoäly opetti vanhan puhelimen kuvaamaan pimeässä
+
+Android|Espoolaiskodin teknisessä tilassa vanhan Honor-puhelimen pitäisi lukea
+maailmaa silloin, kun kukaan ei katso. Ensin sen piti vain oppia sytyttämään
+salamavalo.
 
 Vanhalla Honor 5C -puhelimella on uusi tehtävä Espoolaiskodin teknisessä
 tilassa. Sen pitäisi ottaa kuvia kylmän ja lämpimän veden mittareista,
 lämmityspiirin painemittarista ja lämpömittarista täysin itsenäisesti,
 yölläkin ja ilman että kukaan käy paikan päällä painamassa mitään.
-
-Ongelma on valo. Tai pikemminkin sen puute.
 
 Huoneessa on pimeää, ja ilman salamavaloa kuvat ovat käytännössä mustia.
 Ajatus tuntui silti aluksi suoraviivaiselta: vanha puhelin laturiin,
@@ -89,7 +91,7 @@ ajan, kuva kirkastui.
 Vielä yksi este piti ohittaa. Kun puhelimen näyttö on sammutettuna,
 tavallinen esikatselupinta ei toimi, koska se tarvitsee näytönohjaimen.
 Ratkaisuksi tuli esikatselun ohittaminen kokonaan ja kuvan tallentaminen
-suoraan `ImageReader`-rajapinnan kautta.
+suoraan kameran puskurista.
 
 Silloin syntyi ensimmäinen versio, joka todella toimi: puhelin otti yksin kuvan
 pimeässä huoneessa ilman USB-kaapelia ja ilman että kenenkään piti herättää
@@ -129,12 +131,12 @@ havaittiin, että osa niistä oli pehmeitä. Syy ei ollut valossa vaan siinä,
 että sovellus tallensi ensimmäisen sopivan näköisen ruudun odottamatta, että
 automaattitarkennus olisi varmasti lukittunut.
 
-Siksi tehtiin vielä uusi korjauskierros. Sovellukseen lisättiin eksplisiittinen
-AF-lukitus ennen tallennusta, mahdollisuus kiinteään käsitarkennukseen sekä
-lokitus, joka kertoi ruuduista tarkennustilan, linssin liikkeen ja etäisyyden.
-Testien perusteella automaattitarkennus osui usein noin 1,13 diopteriin, mutta
-juuri tässä asennuksessa kaikkein terävin tulos saatiin noin 1,3 diopterin
-käsitarkennuksella.
+Siksi tehtiin vielä uusi korjauskierros. Sovellukseen lisättiin varma
+automaattitarkennuksen lukitus ennen tallennusta, mahdollisuus kiinteään
+käsitarkennukseen sekä lokitus, joka kertoi ruuduista tarkennustilan, linssin
+liikkeen ja etäisyyden. Testien perusteella automaattitarkennus osui usein
+noin 1,13 diopteriin, mutta juuri tässä asennuksessa kaikkein terävin tulos
+saatiin noin 1,3 diopterin käsitarkennuksella.
 
 Kun uusi versio asennettiin puhelimeen ja ajettiin läpi päästä päähän, tulos
 oli edelleen kirkas – noin 24,3 prosenttia – mutta nyt myös selvästi terävämpi.
